@@ -1,0 +1,221 @@
+
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Auth from './components/Auth';
+import type { UserProfile as UserProfileType } from './types';
+import { DEFAULT_USER_PROFILE } from './constants';
+import { supabaseClient, getUserPreferences } from './services/supabase';
+import { Logo } from './components/Logo';
+import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingOverlay from './components/LoadingOverlay';
+
+// Lazy Load Components for Performance
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const PreferencesPage = lazy(() => import('./components/PreferencesPage'));
+const ProfileEditPage = lazy(() => import('./components/ProfileEditPage'));
+const HistoryPage = lazy(() => import('./components/HistoryPage'));
+const RecipeDetailPage = lazy(() => import('./components/RecipeDetailPage'));
+const TermsPage = lazy(() => import('./components/TermsPage'));
+const NotFound = lazy(() => import('./components/NotFound'));
+
+// Protected Route Component
+interface ProtectedRouteProps {
+  children?: React.ReactNode;
+  session: any;
+  loading: boolean;
+}
+
+const ProtectedRoute = ({ children, session, loading }: ProtectedRouteProps) => {
+  if (loading) return null;
+  if (!session) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
+
+// Global Suspense Loader
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+  </div>
+);
+
+const App: React.FC = () => {
+  const [userProfile, setUserProfile] = useState<UserProfileType>(DEFAULT_USER_PROFILE);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  const [dashboardKey, setDashboardKey] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initSession = async () => {
+      const timeoutId = setTimeout(() => {
+        if (mounted && loading) {
+          console.warn("Session init timed out. Forcing logout.");
+          setLoading(false);
+          supabaseClient.auth.signOut();
+        }
+      }, 3000);
+
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (mounted) {
+          setSession(session);
+          if (session?.user?.id) {
+            const prefs = await getUserPreferences(session.user.id);
+            if (prefs) {
+              setUserProfile(prefs);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Session init error:", error);
+        await supabaseClient.auth.signOut();
+      } finally {
+        if (mounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      }
+    };
+
+    initSession();
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (mounted) {
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUserProfile(DEFAULT_USER_PROFILE);
+          setLoading(false);
+          return;
+        }
+
+        setSession(session);
+        
+        if (session?.user?.id) {
+          const prefs = await getUserPreferences(session.user.id);
+          if (prefs) {
+            setUserProfile(prefs);
+          } else {
+            setUserProfile(DEFAULT_USER_PROFILE);
+          }
+        } else {
+          setUserProfile(DEFAULT_USER_PROFILE);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleNewRecipe = () => {
+    setDashboardKey(prev => prev + 1);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center transition-colors duration-300">
+        <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
+           <div className="relative w-32 h-32 flex items-end justify-center mb-6">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-10 z-0 pointer-events-none">
+                 <div className="steam-particle w-4 h-4 left-6 top-6" style={{ animationDelay: '0s' }}></div>
+                 <div className="steam-particle w-5 h-5 left-10 top-4" style={{ animationDelay: '0.5s' }}></div>
+              </div>
+              <div className="animate-boil relative z-10">
+                <Logo className="w-24 h-24" showText={false} />
+              </div>
+           </div>
+           <div className="flex flex-col items-center gap-2">
+             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Sabora</h1>
+             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Encendiendo fogones...</p>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <ErrorBoundary>
+          <Router>
+            <Layout 
+              onNewRecipe={handleNewRecipe}
+              session={session}
+            >
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app" replace />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  
+                  <Route 
+                    path="/app" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <Dashboard 
+                          key={dashboardKey}
+                          userProfile={userProfile} 
+                          session={session}
+                        />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/preferences" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <PreferencesPage 
+                          profile={userProfile}
+                          setProfile={setUserProfile}
+                          session={session}
+                        />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/profile" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <ProfileEditPage session={session} />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/history" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <HistoryPage session={session} />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/recipe/:id" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <RecipeDetailPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </Layout>
+          </Router>
+        </ErrorBoundary>
+      </ToastProvider>
+    </ThemeProvider>
+  );
+};
+
+export default App;

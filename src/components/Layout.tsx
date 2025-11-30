@@ -1,0 +1,127 @@
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, Menu, Sun, Moon } from 'lucide-react';
+import { signOut } from '../services/supabase';
+import Sidebar from './Sidebar';
+import { Logo } from './Logo';
+import { useTheme } from '../context/ThemeContext';
+
+interface LayoutProps {
+  children: React.ReactNode;
+  onNewRecipe: () => void;
+  session: any;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  
+  const isAppPage = location.pathname.startsWith('/app');
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    } finally {
+      // Forzamos la navegación siempre, incluso si falla la API
+      navigate('/');
+      // Opcional: recargar para limpiar estados de memoria si es necesario
+      // window.location.href = '/'; 
+    }
+  };
+
+  if (session && isAppPage) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex transition-colors duration-300">
+        <Sidebar 
+          session={session}
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          onLogout={handleLogout}
+          onNewRecipe={onNewRecipe}
+          onOpenHistory={() => {
+             const historyEl = document.getElementById('history-section');
+             if(historyEl) historyEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+
+        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 z-30 shadow-sm flex items-center px-4 justify-between border-b border-gray-100 dark:border-gray-700">
+           <Logo className="w-8 h-8" textClassName="text-xl" />
+           <button 
+             onClick={() => setIsMobileMenuOpen(true)}
+             className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+           >
+             <Menu className="w-6 h-6" />
+           </button>
+        </div>
+
+        <main className="flex-grow md:pl-20 pt-20 md:pt-8 px-4 md:px-8 pb-10 transition-all duration-300 w-full max-w-[1600px] mx-auto relative">
+          <div className="hidden md:flex absolute top-6 right-8 items-center gap-2 opacity-50 select-none pointer-events-none grayscale hover:grayscale-0 transition-all">
+             <Logo className="h-9 w-auto" textClassName="text-lg text-gray-400 dark:text-gray-600" />
+          </div>
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="group">
+            <Logo className="w-9 h-9" textClassName="text-2xl" />
+          </Link>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors"
+              title={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+
+            {session ? (
+              <>
+                <Link to="/app" className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors">
+                  Ir a la Cocina
+                </Link>
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <Link to="/auth" className="px-4 py-2 text-primary font-bold text-sm border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">
+                Iniciar Sesión
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-grow container mx-auto max-w-4xl px-4 py-8">
+        {children}
+      </main>
+
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 mt-auto transition-colors duration-300">
+        <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 dark:text-gray-500 gap-4">
+          <p>© {new Date().getFullYear()} Sabora. Powered by Gemini & Supabase.</p>
+          <div className="flex gap-4">
+            <Link to="/" className="hover:text-primary">Inicio</Link>
+            <Link to="/terms" className="hover:text-primary">Legal y Privacidad</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Layout; 
