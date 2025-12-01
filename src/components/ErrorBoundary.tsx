@@ -2,6 +2,8 @@ import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 
+
+
 interface Props {
   children: ReactNode;
 }
@@ -18,18 +20,33 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
+    console.error('🔴 ErrorBoundary caught error:', error);
+    console.error('Stack:', error.stack);
     return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+    console.error("❌ Uncaught error:", error);
+    console.error("📍 Component stack:", errorInfo.componentStack);
   }
+
+  private resetError = () => {
+    this.setState({ hasError: false, error: null });
+  };
 
   public render() {
     if (this.state.hasError) {
+      // Leer el tema directamente del localStorage ya que estamos fuera del ThemeProvider
+      const isDark = localStorage.getItem('sabora_theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      }
+
+      console.log('⚠️ Rendering error boundary with error:', this.state.error?.message);
+
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-center">
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl max-w-md w-full border border-red-100 dark:border-red-900/30">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl max-w-md w-full border border-red-100 dark:border-red-900/30 transition-colors duration-300">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
               <AlertTriangle className="w-8 h-8" />
             </div>
@@ -57,7 +74,10 @@ class ErrorBoundary extends Component<Props, State> {
             </button>
             
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => {
+                this.resetError();
+                window.location.href = '/';
+              }}
               className="w-full mt-3 py-3 text-gray-500 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               Volver al Inicio

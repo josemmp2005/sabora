@@ -50,34 +50,39 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const initSession = async () => {
       try {
+        console.log('🔐 Initializing session...');
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         
         if (error) {
-          console.error("Session error:", error);
-          throw error;
+          console.error("❌ Session error:", error);
+          if (mounted) {
+            setSession(null);
+            setLoading(false);
+          }
+          return;
         }
         
         if (!mounted) return;
 
+        console.log('✅ Session loaded:', session ? 'authenticated' : 'no session');
         setSession(session);
         
+        // Usar DEFAULT_USER_PROFILE en lugar de consultar DB
+        // (evita bloqueos por RLS)
         if (session?.user?.id) {
-          const prefs = await getUserPreferences(session.user.id);
-          if (prefs && mounted) {
-            setUserProfile(prefs);
-          }
+          setUserProfile(DEFAULT_USER_PROFILE);
         }
       } catch (error) {
-        console.error("Session init error:", error);
+        console.error("❌ Session init error:", error);
         if (mounted) {
           setSession(null);
         }
       } finally {
         if (mounted) {
+          console.log('✅ Loading complete');
           setLoading(false);
         }
       }
@@ -100,28 +105,12 @@ const App: React.FC = () => {
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         setSession(session);
-        
-        if (session?.user?.id) {
-          try {
-            const prefs = await getUserPreferences(session.user.id);
-            if (prefs && mounted) {
-              setUserProfile(prefs);
-            } else {
-              setUserProfile(DEFAULT_USER_PROFILE);
-            }
-          } catch (error) {
-            console.error('Error loading preferences:', error);
-            setUserProfile(DEFAULT_USER_PROFILE);
-          }
-        } else {
-          setUserProfile(DEFAULT_USER_PROFILE);
-        }
+        setUserProfile(DEFAULT_USER_PROFILE);
       }
     });
 
     return () => {
       mounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);

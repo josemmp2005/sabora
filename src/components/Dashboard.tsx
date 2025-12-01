@@ -39,12 +39,27 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
   }, [currentRecipe]);
 
   const loadHistory = async () => {
-    setIsHistoryLoading(true);
-    console.log('🔄 Cargando historial...');
-    const history = await fetchRecentRecipes();
-    console.log('📋 Historial cargado:', history.length, 'recetas');
-    setRecentRecipes(history);
-    setIsHistoryLoading(false);
+    try {
+      setIsHistoryLoading(true);
+      console.log('🔄 Cargando historial...');
+      
+      // Timeout de 5 segundos para evitar bloqueos
+      const timeoutPromise = new Promise<RecipeDB[]>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout loading history')), 5000)
+      );
+      
+      const historyPromise = fetchRecentRecipes();
+      
+      const history = await Promise.race([historyPromise, timeoutPromise]);
+      console.log('📋 Historial cargado:', history.length, 'recetas');
+      setRecentRecipes(history);
+    } catch (error) {
+      console.error('❌ Error cargando historial:', error);
+      setRecentRecipes([]);
+      // No mostrar toast, es normal no tener historial al principio
+    } finally {
+      setIsHistoryLoading(false);
+    }
   };
 
   const checkRateLimit = (): number => {
@@ -109,16 +124,8 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
         CRITICAL: Real food only. No people, no hands, no chefs, no faces, no cartoons, no illustrations, no anthropomorphic vegetables.
       `.trim();
 
-      console.log('🖼️ Generando imagen de la receta...');
       const generatedImage = await generateRecipeImage(imagePrompt);
-      
-      if (generatedImage) {
-        console.log('✅ Imagen generada correctamente');
-        setCurrentImage(generatedImage);
-      } else {
-        console.warn('⚠️ No se pudo generar la imagen de la receta');
-        setCurrentImage(null);
-      }
+      setCurrentImage(generatedImage);
 
       const userId = session?.user?.id;
       if (userId) {

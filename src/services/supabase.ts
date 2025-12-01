@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, DEFAULT_USER_PROFILE } from '../constants';
 import type { RecipeDB, AIRecipeResponse, UserProfile } from '../types';
 
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -416,18 +417,25 @@ const mapDBRowToRecipe = (row: any): RecipeDB => ({
 });
 
 export const fetchRecentRecipes = async (): Promise<RecipeDB[]> => {
-  const { data, error } = await supabase
-    .from('recipes')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(3);
+  console.log('📥 Fetching recent recipes from DB...');
+  try {
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(3);
 
-  if (error) {
-    console.error("Error fetching recent history:", JSON.stringify(error, null, 2));
+    if (error) {
+      console.error("❌ Error fetching recent history:", JSON.stringify(error, null, 2));
+      return [];
+    }
+    
+    console.log('✅ Recipes fetched:', data?.length || 0);
+    return (data || []).map(mapDBRowToRecipe);
+  } catch (err) {
+    console.error('❌ Exception in fetchRecentRecipes:', err);
     return [];
   }
-  
-  return (data || []).map(mapDBRowToRecipe);
 };
 
 export const fetchUserHistory = async (userId: string): Promise<RecipeDB[]> => {
