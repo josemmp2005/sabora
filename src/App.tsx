@@ -51,34 +51,34 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const initSession = async () => {
-      const timeoutId = setTimeout(() => {
-        if (mounted && loading) {
-          console.warn("Session init timed out. Forcing logout.");
-          setLoading(false);
-          supabaseClient.auth.signOut();
-        }
-      }, 3000);
-
       try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         
-        if (mounted) {
-          setSession(session);
-          if (session?.user?.id) {
-            const prefs = await getUserPreferences(session.user.id);
-            if (prefs) {
-              setUserProfile(prefs);
-            }
+        if (error) {
+          console.error("Session error:", error);
+          throw error;
+        }
+        
+        if (!mounted) return;
+
+        setSession(session);
+        
+        if (session?.user?.id) {
+          const prefs = await getUserPreferences(session.user.id);
+          if (prefs && mounted) {
+            setUserProfile(prefs);
           }
         }
       } catch (error) {
         console.error("Session init error:", error);
-        await supabaseClient.auth.signOut();
+        if (mounted) {
+          setSession(null);
+        }
       } finally {
         if (mounted) {
-          clearTimeout(timeoutId);
           setLoading(false);
         }
       }
@@ -89,21 +89,29 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if (mounted) {
-        if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUserProfile(DEFAULT_USER_PROFILE);
-          setLoading(false);
-          return;
-        }
+      console.log('Auth state changed:', event);
+      
+      if (!mounted) return;
 
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setSession(null);
+        setUserProfile(DEFAULT_USER_PROFILE);
+        return;
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         setSession(session);
         
         if (session?.user?.id) {
-          const prefs = await getUserPreferences(session.user.id);
-          if (prefs) {
-            setUserProfile(prefs);
-          } else {
+          try {
+            const prefs = await getUserPreferences(session.user.id);
+            if (prefs && mounted) {
+              setUserProfile(prefs);
+            } else {
+              setUserProfile(DEFAULT_USER_PROFILE);
+            }
+          } catch (error) {
+            console.error('Error loading preferences:', error);
             setUserProfile(DEFAULT_USER_PROFILE);
           }
         } else {
@@ -114,6 +122,7 @@ const App: React.FC = () => {
 
     return () => {
       mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);

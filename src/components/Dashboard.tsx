@@ -3,7 +3,8 @@ import RecipeForm from './RecipeForm';
 import RecipeDisplay from './RecipeDisplay';
 import HistoryList from './HistoryList';
 import LoadingOverlay from './LoadingOverlay';
-import { generateRecipeAI, generateRecipeImage } from '../services/gemini';
+import { RateLimitWarning } from './RateLimitWarning';
+import { generateRecipeAI, generateRecipeImage } from '../services/gemini-edge';
 import { checkSmartCache, saveRecipeToDB, fetchRecentRecipes, getFullRecipeById } from '../services/supabase';
 import type { AIRecipeResponse, UserProfile as UserProfileType, GenerationParams, RecipeDB } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -21,6 +22,7 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState<AIRecipeResponse | null>(null);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [showRateLimitWarning, setShowRateLimitWarning] = useState(false);
 
   // Rate Limit Config
   const RATE_LIMIT_MS = 30000; // 30 seconds
@@ -29,9 +31,18 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
     loadHistory();
   }, []);
 
+  // Recargar historial cuando volvemos al dashboard
+  useEffect(() => {
+    if (!currentRecipe && !isLoading) {
+      loadHistory();
+    }
+  }, [currentRecipe]);
+
   const loadHistory = async () => {
     setIsHistoryLoading(true);
+    console.log('🔄 Cargando historial...');
     const history = await fetchRecentRecipes();
+    console.log('📋 Historial cargado:', history.length, 'recetas');
     setRecentRecipes(history);
     setIsHistoryLoading(false);
   };
@@ -73,8 +84,20 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
       // Set timestamp for Rate Limiting
       localStorage.setItem('sabora_last_gen', Date.now().toString());
 
-      // Pass timeLimit param
-      const generatedRecipe = await generateRecipeAI(params.prompt, params.mode, userProfile, params.timeLimit);
+      // Mostrar warning de rate limit
+      setShowRateLimitWarning(true);
+      setTimeout(() => setShowRateLimitWarning(false), 8000); // Ocultar después de 8s
+
+      // Pass all params to Edge Function
+      const generatedRecipe = await generateRecipeAI(
+        params.prompt, 
+        params.mode, 
+        userProfile, 
+        params.timeLimit,
+        params.ingredients,
+        params.servings,
+        params.utensils
+      );
       generatedRecipe.recipe_metadata.servings = params.servings; 
       
       setCurrentRecipe(generatedRecipe);
@@ -92,7 +115,9 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
       const userId = session?.user?.id;
       if (userId) {
         await saveRecipeToDB(userId, generatedRecipe, params.prompt, generatedImage);
-        loadHistory();
+        // Esperar un momento antes de recargar el historial para que la DB se actualice
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadHistory();
         showToast('Receta generada y guardada.', 'success');
       } else {
         console.warn("User not logged in, recipe not saved to DB");
@@ -133,6 +158,8 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
   const resetView = () => {
     setCurrentRecipe(null);
     setCurrentImage(null);
+    // Recargar historial cuando volvemos al dashboard
+    loadHistory();
   };
 
   return (
@@ -149,6 +176,7 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
             
             <RecipeForm isLoading={false} onSubmit={handleGenerate} />
             
+            {/* Historial siempre visible en dashboard */}
             <HistoryList 
               recipes={recentRecipes} 
               isLoading={isHistoryLoading}
@@ -163,6 +191,8 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
           isPro={userProfile.is_pro || false}
         />
       )}
+      
+      <RateLimitWarning show={showRateLimitWarning} />
     </div>
   );
 };

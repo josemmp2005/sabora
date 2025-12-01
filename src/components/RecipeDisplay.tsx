@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import CookMode from './CookMode';
 import ShoppingListModal from './ShoppingListModal';
 import ChefChat from './ChefChat';
-import { generateRecipeImage } from '../services/gemini';
+import { generateRecipeImage } from '../services/gemini-edge';
 
 interface Props {
   recipe: AIRecipeResponse;
