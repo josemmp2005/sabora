@@ -109,6 +109,7 @@ export const generateRecipeAI = async (
  */
 export const generateRecipeImage = async (prompt: string): Promise<string | null> => {
   try {
+    console.log('📸 Llamando a Edge Function generate-image...');
     const { data: { session } } = await supabaseClient.auth.getSession();
     
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
@@ -121,14 +122,17 @@ export const generateRecipeImage = async (prompt: string): Promise<string | null
     });
 
     if (!response.ok) {
-      console.error('Image generation failed');
+      console.error('❌ Image generation failed:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
       return null;
     }
 
     const result = await response.json();
+    console.log('📦 Response from generate-image:', result.success ? '✅ Success' : '❌ Failed');
     return result.success ? result.imageUrl : null;
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error('❌ Error generating image:', error);
     return null;
   }
 };

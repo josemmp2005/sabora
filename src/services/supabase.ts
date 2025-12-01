@@ -74,6 +74,55 @@ export const updateUserPassword = async (newPassword: string) => {
   return { data, error };
 };
 
+/* --- STORAGE & AVATARS --- */
+
+/**
+ * Upload avatar to Supabase Storage
+ * Returns the public URL of the uploaded file
+ */
+export const uploadAvatar = async (userId: string, file: File): Promise<{ url: string | null; error: any }> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    // Delete old avatar if exists
+    const { data: existingFiles } = await supabase.storage
+      .from('user-uploads')
+      .list('avatars', {
+        search: userId
+      });
+
+    if (existingFiles && existingFiles.length > 0) {
+      const filesToDelete = existingFiles.map(f => `avatars/${f.name}`);
+      await supabase.storage.from('user-uploads').remove(filesToDelete);
+    }
+
+    // Upload new avatar
+    const { data, error } = await supabase.storage
+      .from('user-uploads')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Error uploading avatar:', error);
+      return { url: null, error };
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('user-uploads')
+      .getPublicUrl(filePath);
+
+    return { url: publicUrl, error: null };
+  } catch (error) {
+    console.error('Upload avatar exception:', error);
+    return { url: null, error };
+  }
+};
+
 /* --- STORAGE & PROFILE --- */
 
 /**
@@ -81,50 +130,23 @@ export const updateUserPassword = async (newPassword: string) => {
  * NOW SUPPORTS BASE64 Images stored directly in DB.
  */
 export const upsertUserProfile = async (userId: string, profile: { username: string; avatar_url?: string | null; email?: string }) => {
-  // 1. Update Supabase Auth Metadata (fast session update)
-  // CRITICAL: We DO NOT save Base64 strings to Auth Metadata because it has a small size limit (cookie/header limits).
-  // We only update username here. Avatar is handled in DB only if it's a huge string.
-  const authUpdates: any = {
-    username: profile.username
-  };
-  
-  // Only update avatar in auth metadata if it's a short URL (like a placeholder or http link), NOT a base64 string
-  if (profile.avatar_url && profile.avatar_url.length < 500) {
-    authUpdates.avatar_url = profile.avatar_url;
+  try {
+    const authUpdates: any = {
+      username: profile.username
+    };
+
+    const { error: authError } = await supabaseClient.auth.updateUser({
+      data: authUpdates
+    });
+    
+    if (authError) {
+      return { error: authError };
+    }
+    
+    return { error: null };
+  } catch (error) {
+    return { error: error as any };
   }
-
-  const { error: authError } = await supabase.auth.updateUser({
-    data: authUpdates
-  });
-
-  if (authError) console.warn("Auth metadata update warning:", authError.message);
-
-  // 2. Update public.users table (Sync with DB)
-  // This table supports TEXT columns which can hold large Base64 strings (approx 1GB).
-  const publicProfile: any = {
-    id: userId,
-    username: profile.username,
-  };
-  
-  if (profile.email) publicProfile.email = profile.email;
-  
-  // ALWAYS include avatar_url for the DB, even if it is a massive Base64 string
-  if ('avatar_url' in profile) {
-    publicProfile.avatar_url = profile.avatar_url;
-  }
-
-  console.log("Syncing to public.users (DB)...");
-
-  const { error: dbError } = await supabase
-    .from('users')
-    .upsert(publicProfile, { onConflict: 'id' });
-
-  if (dbError) {
-    console.error("Error syncing with public.users:", dbError);
-    return { error: dbError };
-  }
-
-  return { error: null };
 };
 
 /**

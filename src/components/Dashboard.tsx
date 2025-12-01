@@ -109,8 +109,16 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
         CRITICAL: Real food only. No people, no hands, no chefs, no faces, no cartoons, no illustrations, no anthropomorphic vegetables.
       `.trim();
 
+      console.log('🖼️ Generando imagen de la receta...');
       const generatedImage = await generateRecipeImage(imagePrompt);
-      setCurrentImage(generatedImage);
+      
+      if (generatedImage) {
+        console.log('✅ Imagen generada correctamente');
+        setCurrentImage(generatedImage);
+      } else {
+        console.warn('⚠️ No se pudo generar la imagen de la receta');
+        setCurrentImage(null);
+      }
 
       const userId = session?.user?.id;
       if (userId) {

@@ -22,7 +22,7 @@ const ProfileEditPage: React.FC<Props> = ({ session }) => {
   useEffect(() => {
     if (session?.user) {
       setEmail(session.user.email || '');
-      setUsername(session.user.user_metadata?.username || '');
+      setUsername(session.user.user_metadata?.username || session.user.email?.split('@')[0] || '');
     }
   }, [session]);
 
@@ -33,14 +33,15 @@ const ProfileEditPage: React.FC<Props> = ({ session }) => {
     try {
       const userId = session.user.id;
 
-      // 1. Update Profile Info (Username in DB)
+      // Update Profile Info (Username only)
       const { error: profileError } = await upsertUserProfile(userId, {
         username,
-        email,
-        avatar_url: null // We just pass null or existing logic, avatar upload removed per request
+        email
       });
 
-      if (profileError) throw new Error("Error guardando el perfil en la base de datos.");
+      if (profileError) {
+        throw new Error(profileError.message || "Error guardando el perfil.");
+      }
 
       // 2. Update Password if provided
       if (newPassword) {
@@ -56,7 +57,6 @@ const ProfileEditPage: React.FC<Props> = ({ session }) => {
       setConfirmPassword('');
       
     } catch (err: any) {
-      console.error(err);
       showToast(err.message || 'Error al actualizar perfil.', 'error');
     } finally {
       setIsLoading(false);
@@ -74,8 +74,26 @@ const ProfileEditPage: React.FC<Props> = ({ session }) => {
         
         <div className="grid md:grid-cols-3 gap-6">
           
+          {/* Left Column: Avatar */}
+          <div className="md:col-span-1">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Avatar</h3>
+              
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center border-4 border-gray-200 dark:border-gray-600 shadow-lg">
+                  <span className="text-5xl font-bold text-white">
+                    {username ? username.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                  Avatar generado automáticamente
+                </p>
+              </div>
+            </div>
+          </div>
+          
           {/* Right Column: Form Fields */}
-          <div className="md:col-span-3 space-y-6">
+          <div className="md:col-span-2 space-y-6">
             
             {/* Personal Info Card */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">

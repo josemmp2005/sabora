@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { useTheme } from '../context/ThemeContext';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 interface SidebarProps {
   session: any;
@@ -33,8 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
-  const username = session?.user?.user_metadata?.username || session?.user?.email?.split('@')[0] || 'Chef';
-  const avatarUrl = session?.user?.user_metadata?.avatar_url;
+  
+  // Usar el hook para obtener el perfil actualizado desde la DB
+  const { username, avatarUrl } = useUserProfile(session);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -66,10 +68,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       `}
     >
       <div className={`flex-shrink-0 flex items-center justify-center ${isUser ? 'w-10 h-10' : 'w-6 h-6'}`}>
-        {isUser && avatarUrl ? (
-          <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
+        {isUser ? (
+          <div className="w-full h-full rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
+            <span className="text-lg font-bold text-white">
+              {username ? username.charAt(0).toUpperCase() : 'U'}
+            </span>
+          </div>
         ) : (
-          <Icon className={`${isUser ? 'w-full h-full p-2 bg-gray-100 dark:bg-gray-800 rounded-full' : 'w-6 h-6'}`} />
+          <Icon className="w-6 h-6" />
         )}
       </div>
 
