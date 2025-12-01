@@ -1,4 +1,4 @@
-import { AlertCircle, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 interface RateLimitWarningProps {
   show: boolean;

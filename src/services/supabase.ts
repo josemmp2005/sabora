@@ -99,7 +99,7 @@ export const uploadAvatar = async (userId: string, file: File): Promise<{ url: s
     }
 
     // Upload new avatar
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('user-uploads')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -129,7 +129,7 @@ export const uploadAvatar = async (userId: string, file: File): Promise<{ url: s
  * Updates the Supabase Auth Metadata AND public.users table.
  * NOW SUPPORTS BASE64 Images stored directly in DB.
  */
-export const upsertUserProfile = async (userId: string, profile: { username: string; avatar_url?: string | null; email?: string }) => {
+export const upsertUserProfile = async (_userId: string, profile: { username: string; avatar_url?: string | null; email?: string }) => {
   try {
     const authUpdates: any = {
       username: profile.username

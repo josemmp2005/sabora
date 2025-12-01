@@ -10,7 +10,6 @@ import { Logo } from './components/Logo';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import LoadingOverlay from './components/LoadingOverlay';
 
 // Lazy Load Components for Performance
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -93,7 +92,7 @@ const App: React.FC = () => {
       
       if (!mounted) return;
 
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         setSession(null);
         setUserProfile(DEFAULT_USER_PROFILE);
         return;

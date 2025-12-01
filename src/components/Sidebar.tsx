@@ -28,15 +28,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen, 
   onClose, 
   onLogout, 
-  onNewRecipe,
-  onOpenHistory
+  onNewRecipe
 }) => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   
   // Usar el hook para obtener el perfil actualizado desde la DB
-  const { username, avatarUrl } = useUserProfile(session);
+  const { username } = useUserProfile(session);
 
   const handleNavigation = (path: string) => {
     navigate(path);

@@ -58,10 +58,8 @@ export const generateRecipeAI = async (
 
     if (!response.ok) {
       let errorMessage = 'Failed to generate recipe';
-      let errorDetails = {};
       try {
         const error = await response.json();
-        errorDetails = error;
         errorMessage = error.error || error.message || errorMessage;
         
         // Log detailed error info

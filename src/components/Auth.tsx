@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, upsertUserProfile } from '../services/supabase';
-import { Mail, Lock, Loader2, ArrowRight, User, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, User, Eye, EyeOff, Check } from 'lucide-react';
 import { Logo } from './Logo';
 import { useToast } from '../context/ToastContext';
 

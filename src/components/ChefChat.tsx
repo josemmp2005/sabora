@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot } from 'lucide-react';
 import type { AIRecipeResponse } from '../types';
 import { askChefAboutRecipe } from '../services/gemini-edge';
 
