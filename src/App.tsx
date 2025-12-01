@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import Auth from './components/Auth';
 import type { UserProfile as UserProfileType } from './types';
 import { DEFAULT_USER_PROFILE } from './constants';
-import { supabaseClient, getUserPreferences } from './services/supabase';
+import { supabaseClient } from './services/supabase';
 import { Logo } from './components/Logo';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
