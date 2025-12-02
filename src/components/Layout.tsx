@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, Sun, Moon } from 'lucide-react';
+import { LogOut, Menu, Moon, Sun } from 'lucide-react';
 import { signOut } from '../services/supabase';
 import Sidebar from './Sidebar';
 import { Logo } from './Logo';
@@ -15,10 +15,11 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const isAppPage = location.pathname.startsWith('/app');
+  const isLanding = location.pathname === '/';
 
   const handleLogout = async () => {
     try {
@@ -26,10 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     } finally {
-      // Forzamos la navegación siempre, incluso si falla la API
       navigate('/');
-      // Opcional: recargar para limpiar estados de memoria si es necesario
-      // window.location.href = '/'; 
     }
   };
 
@@ -69,25 +67,24 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
-      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300 font-sans">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="group">
             <Logo className="w-9 h-9" textClassName="text-2xl" />
           </Link>
 
           <div className="flex items-center gap-4">
-            <button
+            <button 
               onClick={toggleTheme}
-              className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors"
-              title={theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'}
+              className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-full transition-colors"
             >
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
 
             {session ? (
               <>
-                <Link to="/app" className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors">
+                <Link to="/app" className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-full hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20">
                   Ir a la Cocina
                 </Link>
                 <button 
@@ -99,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
                 </button>
               </>
             ) : (
-              <Link to="/auth" className="px-4 py-2 text-primary font-bold text-sm border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">
+              <Link to="/auth" className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm rounded-full hover:opacity-90 transition-colors shadow-lg">
                 Iniciar Sesión
               </Link>
             )}
@@ -107,16 +104,19 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto max-w-4xl px-4 py-8">
+      <main className={`flex-grow ${isLanding ? 'w-full' : 'container mx-auto max-w-4xl px-4 py-8'}`}>
         {children}
       </main>
 
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 mt-auto transition-colors duration-300">
-        <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 dark:text-gray-500 gap-4">
-          <p>© {new Date().getFullYear()} Sabora. Powered by Gemini & Supabase.</p>
-          <div className="flex gap-4">
-            <Link to="/" className="hover:text-primary">Inicio</Link>
-            <Link to="/terms" className="hover:text-primary">Legal y Privacidad</Link>
+      <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 mt-auto transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400 gap-4">
+          <div className="flex items-center gap-2">
+             <Logo className="w-6 h-6 grayscale opacity-50" showText={false} />
+             <p>© {new Date().getFullYear()} Sabora AI.</p>
+          </div>
+          <div className="flex gap-6">
+            <Link to="/" className="hover:text-primary transition-colors">Inicio</Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">Legal y Privacidad</Link>
           </div>
         </div>
       </footer>
@@ -124,4 +124,4 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
   );
 };
 
-export default Layout; 
+export default Layout;
