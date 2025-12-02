@@ -58,7 +58,7 @@ const LandingPage: React.FC = () => {
                             <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                             <div className="w-3 h-3 rounded-full bg-green-400"></div>
                         </div>
-                        <div className="text-xs text-gray-400 font-mono">sabora.ai</div>
+                        <div className="text-xs text-gray-400 font-mono">nonnapp.app</div>
                     </div>
                     
                     {/* Mockup Content */}
@@ -113,7 +113,7 @@ const LandingPage: React.FC = () => {
                 <span className="text-primary font-bold text-sm uppercase tracking-wider mb-2 block">Características</span>
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-4">Tu cocina, nivel experto</h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                    Sabora utiliza la última tecnología de Google Gemini para entender tus gustos y lo que tienes en tu despensa.
+                    nonnapp utiliza la última tecnología de Google Gemini para entender tus gustos y lo que tienes en tu despensa.
                 </p>
             </div>
 

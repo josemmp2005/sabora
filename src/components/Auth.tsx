@@ -82,7 +82,7 @@ const Auth: React.FC = () => {
         <div className="flex flex-col items-center mb-8">
           <Logo className="w-16 h-16 mb-2" textClassName="text-3xl" />
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-4">
-            {isLogin ? 'Bienvenido de nuevo' : 'Únete a Sabora'}
+            {isLogin ? 'Bienvenido de nuevo' : 'Únete a nonnapp'}
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm text-center">
             {isLogin 

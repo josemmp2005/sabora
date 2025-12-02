@@ -102,7 +102,7 @@ const PreferencesPage: React.FC<Props> = ({ profile, setProfile, session }) => {
             </div>
             <div>
                 <h2 className="text-lg font-bold text-white">Tu Plan Actual</h2>
-                <p className="text-xs text-gray-400">Gestiona tu suscripción Sabora Pro.</p>
+                <p className="text-xs text-gray-400">Gestiona tu suscripción nonnapp Pro.</p>
             </div>
           </div>
           

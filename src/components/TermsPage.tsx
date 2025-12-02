@@ -28,12 +28,12 @@ const TermsPage: React.FC = () => {
             </div>
             <div className="prose text-gray-600 dark:text-gray-300 text-sm leading-relaxed space-y-4">
               <p>
-                Bienvenido a Sabora. Al utilizar nuestra aplicación web, aceptas cumplir con los siguientes términos y condiciones.
+                Bienvenido a nonnapp. Al utilizar nuestra aplicación web, aceptas cumplir con los siguientes términos y condiciones.
                 Este servicio utiliza Inteligencia Artificial (Gemini) para generar contenido culinario.
               </p>
               <p>
                 <strong>Uso de la IA:</strong> Las recetas y consejos generados son sugerencias creativas basadas en modelos de lenguaje. 
-                Sabora no se hace responsable de imprecisiones en los tiempos de cocción, ingredientes o valores nutricionales. 
+                nonnapp no se hace responsable de imprecisiones en los tiempos de cocción, ingredientes o valores nutricionales. 
                 Siempre usa el sentido común al cocinar, especialmente con alérgenos.
               </p>
               <p>
@@ -84,7 +84,7 @@ const TermsPage: React.FC = () => {
             </div>
             <div className="prose text-gray-600 dark:text-gray-300 text-sm leading-relaxed space-y-4">
               <p>
-                Todo el código fuente, diseño y marca "Sabora" son propiedad exclusiva de sus creadores. 
+                Todo el código fuente, diseño y marca "nonnapp" son propiedad exclusiva de sus creadores. 
                 El contenido generado por la IA para ti es de libre uso personal.
               </p>
             </div>
@@ -92,7 +92,7 @@ const TermsPage: React.FC = () => {
         </div>
         
         <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-700 text-center text-xs text-gray-400 dark:text-gray-500">
-          Para consultas legales, contáctanos en legal@sabora.app
+          Para consultas legales, contáctanos en legal@nonnapp.app
         </div>
       </div>
     </div>

@@ -14,6 +14,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Lazy Load Components for Performance
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
+const GeneratorPage = lazy(() => import('./components/GeneratorPage'));
+const ChefPage = lazy(() => import('./components/ChefPage'));
 const PreferencesPage = lazy(() => import('./components/PreferencesPage'));
 const ProfileEditPage = lazy(() => import('./components/ProfileEditPage'));
 const HistoryPage = lazy(() => import('./components/HistoryPage'));
@@ -133,7 +135,7 @@ const App: React.FC = () => {
               </div>
            </div>
            <div className="flex flex-col items-center gap-2">
-             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Sabora</h1>
+             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">nonnapp</h1>
              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Encendiendo fogones...</p>
            </div>
         </div>
@@ -165,6 +167,25 @@ const App: React.FC = () => {
                           userProfile={userProfile} 
                           session={session}
                         />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/generate" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <GeneratorPage 
+                          userProfile={userProfile} 
+                          session={session}
+                        />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/app/chef" 
+                    element={
+                      <ProtectedRoute session={session} loading={loading}>
+                        <ChefPage />
                       </ProtectedRoute>
                     } 
                   />

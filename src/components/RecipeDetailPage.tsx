@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import RecipeDisplay from './RecipeDisplay';
 import LoadingOverlay from './LoadingOverlay';
 import { getFullRecipeById } from '../services/supabase';
-import type { RecipeDB } from '../types';
+import type{ RecipeDB } from '../types';
 
 const RecipeDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [recipe, setRecipe] = useState<RecipeDB | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRecipe = async () => {
+      // 1. Check if recipe data was passed via navigation (Featured Recipes)
+      if (location.state && location.state.recipeData) {
+        setRecipe(location.state.recipeData);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch from DB
       if (!id) return;
       setLoading(true);
       const data = await getFullRecipeById(id);
@@ -27,7 +36,7 @@ const RecipeDetailPage: React.FC = () => {
     };
 
     fetchRecipe();
-  }, [id]);
+  }, [id, location.state]);
 
   if (loading) {
     return <LoadingOverlay isVisible={true} />;
@@ -52,7 +61,7 @@ const RecipeDetailPage: React.FC = () => {
     <div className="max-w-5xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <button 
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 font-medium transition-colors"
+        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:hover:text-white mb-6 font-medium transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Volver

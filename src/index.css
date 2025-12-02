@@ -8,6 +8,10 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
+.font-parisienne {
+    font-family: 'Parisienne', cursive;
+}
+
 
 /* Custom scrollbar for steps */
 

@@ -38,7 +38,7 @@ ${ingredients.map(i => `- ${i.item}: ${i.quantity}`).join('\n')}
 🔪 PREPARACIÓN:
 ${steps.map(s => `${s.step_number}. ${s.instruction}`).join('\n')}
 
-Generado por Sabora App
+Generado por nonnapp
     `.trim();
 
     navigator.clipboard.writeText(text).then(() => {

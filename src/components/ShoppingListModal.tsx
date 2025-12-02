@@ -34,7 +34,7 @@ const ShoppingListModal: React.FC<Props> = ({ ingredients, title, onClose }) => 
 
     const text = `🛒 Lista de compra para "${title}":\n\n` + 
                  selectedIngredients.map(i => `[ ] ${i.item} (${i.quantity})`).join('\n') + 
-                 `\n\nGenerado por Sabora App`;
+                 `\n\nGenerado por nonnapp`;
 
     navigator.clipboard.writeText(text).then(() => {
       showToast('Lista copiada al portapapeles', 'success');

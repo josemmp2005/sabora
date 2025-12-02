@@ -112,7 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400 gap-4">
           <div className="flex items-center gap-2">
              <Logo className="w-6 h-6 grayscale opacity-50" showText={false} />
-             <p>© {new Date().getFullYear()} Sabora AI.</p>
+             <p>© {new Date().getFullYear()} nonnapp.</p>
           </div>
           <div className="flex gap-6">
             <Link to="/" className="hover:text-primary transition-colors">Inicio</Link>
