@@ -12,7 +12,7 @@ class RateLimiter {
   private queue: QueueItem[] = [];
   private processing = false;
   private lastCallTime = 0;
-  private minInterval = 2000; // 2 segundos entre llamadas (30 RPM = 2s interval)
+  private minInterval = 5000; // 5 segundos para evitar rate limits de Gemini
 
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -45,6 +45,7 @@ class RateLimiter {
         const result = await item.fn();
         item.resolve(result);
       } catch (error) {
+        console.error('❌ Error en rate limiter:', error);
         item.reject(error);
       }
     }

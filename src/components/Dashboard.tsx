@@ -5,6 +5,7 @@ import HistoryList from './HistoryList';
 import { fetchRecentRecipes } from '../services/supabase';
 import type { UserProfile as UserProfileType, RecipeDB } from '../types';
 import { Sparkles, Coffee, Zap, Utensils, ArrowRight } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
 import ChefTableWidget from './ChefTableWidget';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 
 const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
   const navigate = useNavigate();
+  const { subscription, limits, checkRecipeLimit } = useSubscription();
   const [recentRecipes, setRecentRecipes] = useState<RecipeDB[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [quickInput, setQuickInput] = useState('');
@@ -78,6 +80,14 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
 
   const username = session?.user?.user_metadata?.username || 'Chef';
 
+  // Calcular recetas restantes hoy
+  const { remaining } = checkRecipeLimit();
+  const planNames = {
+    nipote: 'Nipote',
+    la_mamma: 'La Mamma',
+    la_nonna: 'La Nonna'
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto pb-20 animate-in fade-in duration-500 space-y-10">
       
@@ -96,12 +106,16 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
             {/* Mini Stats */}
             <div className="flex gap-3">
                 <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center min-w-[80px]">
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">{recentRecipes.length}</span>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Recetas</span>
+                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {limits.maxRecipesPerDay === Infinity ? '∞' : remaining}
+                    </span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                      {limits.maxRecipesPerDay === Infinity ? 'Recetas' : 'Hoy'}
+                    </span>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center min-w-[80px]">
                     <span className="text-2xl font-bold text-primary flex items-center gap-1">
-                        {userProfile.is_pro ? 'PRO' : 'Free'}
+                        {planNames[subscription.plan_type]}
                     </span>
                     <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Plan</span>
                 </div>

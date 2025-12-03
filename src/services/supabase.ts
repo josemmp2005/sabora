@@ -284,6 +284,7 @@ export const checkSmartCache = async (prompt: string): Promise<RecipeDB | null> 
 
 /**
  * Saves a generated recipe to the database following strict Schema:
+ * Throws specific error if daily limit is exceeded (RLS policy)
  */
 export const saveRecipeToDB = async (
   userId: string | undefined,
@@ -317,9 +318,20 @@ export const saveRecipeToDB = async (
       .select()
       .single();
 
-    if (recipeError || !recipeData) {
+    if (recipeError) {
+      // Detectar error de política RLS (límite diario)
+      if (recipeError.code === '42501' || recipeError.message?.includes('policy')) {
+        const limitError = new Error('DAILY_LIMIT_EXCEEDED');
+        limitError.name = 'DailyLimitError';
+        throw limitError;
+      }
+      
       console.error("Error saving recipe header:", JSON.stringify(recipeError, null, 2));
       throw recipeError;
+    }
+
+    if (!recipeData) {
+      throw new Error('No recipe data returned');
     }
 
     const recipeId = recipeData.id;
