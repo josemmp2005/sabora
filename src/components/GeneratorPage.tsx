@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import RecipeForm from './RecipeForm';
 import RecipeDisplay from './RecipeDisplay';
 import LoadingOverlay from './LoadingOverlay';
-import { generateRecipeAI, generateRecipeImage } from '../services/gemini';
+import { generateRecipeAI, generateRecipeImage } from '../services/gemini-edge';
 import { checkSmartCache, saveRecipeToDB, fetchRecentRecipes } from '../services/supabase';
 import type{ AIRecipeResponse, UserProfile, GenerationParams } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -23,9 +23,20 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
   const [currentRecipe, setCurrentRecipe] = useState<AIRecipeResponse | null>(null);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
+  // Safety check: if userProfile is not available, show error
+  if (!userProfile) {
+    return (
+      <div className="max-w-5xl mx-auto pb-20 flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-gray-500 dark:text-gray-400">Cargando perfil de usuario...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Auto-trigger if navigated with state
   useEffect(() => {
-    if (location.state && location.state.autoTrigger) {
+    if (location.state && location.state.autoTrigger && userProfile) {
       const { prompt, mode, servings, timeLimit } = location.state;
       handleGenerate({
         prompt,
@@ -37,9 +48,15 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
       // Clear state to prevent loop if user navigates back (optional, but good practice)
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, userProfile]);
 
   const handleGenerate = async (params: GenerationParams) => {
+    // Validate userProfile before proceeding
+    if (!userProfile) {
+      showToast('Error: Perfil de usuario no disponible', 'error');
+      return;
+    }
+
     setIsLoading(true);
     setCurrentRecipe(null);
     setCurrentImage(null);
@@ -59,7 +76,15 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
       }
 
       // 2. Generate Recipe Text
-      const generatedRecipe = await generateRecipeAI(params.prompt, params.mode, userProfile, params.timeLimit);
+      const generatedRecipe = await generateRecipeAI(
+        params.prompt, 
+        params.mode, 
+        userProfile, 
+        params.timeLimit,
+        params.ingredients,
+        params.servings,
+        params.utensils
+      );
       generatedRecipe.recipe_metadata.servings = params.servings; 
       
       setCurrentRecipe(generatedRecipe);

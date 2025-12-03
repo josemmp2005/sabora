@@ -11,7 +11,7 @@
     Moon,
     Sun,
     LayoutDashboard,
-    ChefHat
+    UtensilsCrossed
   } from 'lucide-react';
   import { Logo } from './Logo';
   import { useTheme } from '../context/ThemeContext';
@@ -146,8 +146,8 @@
           />
 
           <MenuItem 
-            icon={ChefHat} 
-            label="Mesa del Chef" 
+            icon={UtensilsCrossed} 
+            label="Mesa de la Nonna" 
             path="/app/chef"
           />
 
@@ -201,3 +201,4 @@
   };
 
   export default Sidebar;
+  

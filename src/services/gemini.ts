@@ -5,7 +5,13 @@ import type { AIRecipeResponse, UserProfile } from "../types";
 
 // Initialize Gemini Client
 // IMPORTANT: In a real app, never expose API_KEY in frontend code. Use a proxy.
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+if (!apiKey) {
+  console.error("⚠️ VITE_GEMINI_API_KEY is not configured in environment variables");
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 /**
  * Helper to retry operations with exponential backoff
@@ -40,6 +46,16 @@ export const generateRecipeAI = async (
   timeLimit?: string
 ): Promise<AIRecipeResponse> => {
   
+  // Validate API key
+  if (!apiKey) {
+    throw new Error("Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file");
+  }
+
+  // Validate userProfile to avoid null/undefined errors
+  if (!userProfile) {
+    throw new Error("User profile is required to generate recipes");
+  }
+  
   // Construct System Instruction based on PDF "Prompt Contextual" (Page 1.2)
   let systemInstruction = `
     Eres un chef experto asistido por IA. 
@@ -48,7 +64,7 @@ export const generateRecipeAI = async (
     Contexto del usuario:
     - Alergias: ${userProfile.allergies || 'Ninguna'}
     - Ingredientes odiados: ${userProfile.disliked_ingredients || 'Ninguno'}
-    - Nivel de habilidad: ${userProfile.cooking_skill}
+    - Nivel de habilidad: ${userProfile.cooking_skill || 'intermediate'}
 
     Si el modo es 'pantry', prioriza usar los ingredientes mencionados.
     Si el modo es 'text', inspírate en la descripción creativa.

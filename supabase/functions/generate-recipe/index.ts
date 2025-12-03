@@ -82,35 +82,53 @@ Formato JSON requerido:
     // Call Gemini API with retry logic
     let response
     let retries = 0
-    const maxRetries = 3
+    const maxRetries = 2 // Reducido a 2 para evitar timeout
     
     while (retries < maxRetries) {
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: finalPrompt
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048,
-              topP: 0.8,
-              topK: 40,
-            }
-          })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 25000) // 25 segundos timeout
+      
+      try {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: finalPrompt
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048,
+                topP: 0.8,
+                topK: 40,
+              }
+            })
+          }
+        )
+        
+        clearTimeout(timeoutId)
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        
+        // Si es timeout o abort, reintentar
+        if (fetchError.name === 'AbortError' && retries < maxRetries - 1) {
+          console.log(`Request timeout. Retrying ${retries + 1}/${maxRetries}`)
+          retries++
+          continue
         }
-      )
+        throw fetchError
+      }
 
       // If rate limited (429), wait and retry
       if (response.status === 429 && retries < maxRetries - 1) {
-        const waitTime = Math.pow(2, retries) * 1000 // Exponential backoff: 1s, 2s, 4s
+        const waitTime = Math.pow(2, retries) * 1000 // Exponential backoff: 1s, 2s
         console.log(`Rate limited. Waiting ${waitTime}ms before retry ${retries + 1}/${maxRetries}`)
         await new Promise(resolve => setTimeout(resolve, waitTime))
         retries++

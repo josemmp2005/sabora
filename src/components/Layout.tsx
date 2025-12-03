@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
         </div>
 
         <main className="flex-grow md:pl-20 pt-20 md:pt-8 px-4 md:px-8 pb-10 transition-all duration-300 w-full max-w-[1600px] mx-auto relative">
-          <div className="hidden md:flex absolute top-6 right-8 items-center gap-2 opacity-50 select-none pointer-events-none grayscale hover:grayscale-0 transition-all">
+          <div className="hidden md:flex fixed top-6 right-8 items-center gap-2 opacity-50 select-none pointer-events-none grayscale hover:grayscale-0 transition-all">
              <Logo className="h-9 w-auto" textClassName="text-lg text-gray-400 dark:text-gray-600" />
           </div>
           {children}
@@ -71,7 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="group">
-            <Logo className="w-9 h-9" textClassName="text-2xl" />
+             <Logo className="h-8 w-auto" textClassName="text-lg" />
           </Link>
 
           <div className="flex items-center gap-4">

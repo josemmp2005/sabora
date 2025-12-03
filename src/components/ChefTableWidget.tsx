@@ -1,57 +1,61 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChefHat, Flame, Star, BookOpen, ArrowRight } from 'lucide-react';
+import { ChefHat, Flame, Star, BookOpen, ArrowRight, Heart, Flower2 } from 'lucide-react';
 import type { RecipeDB } from '../types';
 
-// Estilos de Chefs Predefinidos
+// Estilos de "Nonnas" Predefinidos
 const CHEF_STYLES = [
   {
-    id: 'gordon',
-    name: 'El Perfeccionista',
-    description: 'Técnica impecable, sabores intensos, estilo Michelin.',
-    style: 'Estilo de cocina de alta gama, técnica francesa moderna, exigente, presentación minimalista y elegante.',
+    id: 'francesca',
+    name: 'Nonna Francesca',
+    subtitle: 'La Exigente',
+    description: 'No tolera un corte mal hecho. Técnica perfecta y sabores intensos.',
+    style: 'Estilo de cocina de alta gama, técnica francesa moderna pero con alma italiana, exigente, presentación minimalista y elegante.',
     image: 'https://images.unsplash.com/photo-1577106263724-2c8e03bfe9f4?auto=format&fit=crop&w=400&q=80',
     color: 'from-red-500 to-orange-600',
-    dish: 'Beef Wellington Moderno'
+    dish: 'Osobuco a la Milanesa Perfecto'
   },
   {
-    id: 'grandma',
-    name: 'La Nonna',
-    description: 'Comida reconfortante, tradicional y llena de amor.',
-    style: 'Estilo casero rústico, cocina italiana tradicional, porciones generosas, ingredientes frescos y simples.',
+    id: 'maria',
+    name: 'Nonna Maria',
+    subtitle: 'La Clásica',
+    description: 'Comida que te abraza. Mucha mantequilla y mucho amor.',
+    style: 'Estilo casero rústico, cocina italiana tradicional de la vieja escuela, porciones generosas, ingredientes frescos y simples, confort food.',
     image: 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?auto=format&fit=crop&w=400&q=80',
     color: 'from-green-500 to-emerald-700',
-    dish: 'Pasta Casera al Ragú'
+    dish: 'Lasaña de la Abuela'
   },
   {
-    id: 'fusion',
-    name: 'Maestro Fusión',
-    description: 'Sabores asiáticos mezclados con toques latinos.',
-    style: 'Cocina fusión Nikkei, atrevida, picante, cítrica, emplatado colorido y artístico.',
+    id: 'valentina',
+    name: 'Nonna Valentina',
+    subtitle: 'La Viajera',
+    description: 'Vivió 10 años en Asia y Sudamérica. Le gusta experimentar.',
+    style: 'Cocina fusión italo-asiática-latina, atrevida, picante, cítrica, emplatado colorido y artístico, ingredientes exóticos.',
     image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=400&q=80',
     color: 'from-purple-500 to-indigo-600',
-    dish: 'Ceviche con Leche de Tigre de Coco'
+    dish: 'Tiradito de Lubina al Pesto'
   },
   {
-    id: 'healthy',
-    name: 'Green Guru',
-    description: 'Superalimentos, energía limpia y mucho verde.',
-    style: 'Cocina basada en plantas, superalimentos, vibrante, fresca, bowls nutritivos.',
+    id: 'sofia',
+    name: 'Nonna Sofia',
+    subtitle: 'La Moderna',
+    description: 'Dice que la quinoa es el nuevo arroz. Saludable y bio.',
+    style: 'Cocina basada en plantas, superalimentos, vibrante, fresca, bowls nutritivos, bajo en carbohidratos, keto-friendly.',
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',
     color: 'from-lime-500 to-green-600',
-    dish: 'Buddha Bowl Energético'
+    dish: 'Risotto de Coliflor y Trufa'
   }
 ];
 
-// Recetas de Autor
+// Recetas de Autor (Recetas de Familia)
 const FEATURED_RECIPES: RecipeDB[] = [
     {
         id: 99901,
         main_image_url: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?q=80&w=1200&auto=format&fit=crop",
         recipe_metadata: {
-            title: "Risotto de Setas Trufado",
-            description: "Un risotto cremoso y elegante con una mezcla de setas silvestres, terminado con aceite de trufa y parmesano reggiano de 24 meses.",
+            title: "Risotto de Setas de la Familia",
+            description: "La receta secreta del domingo. Un risotto cremoso con setas silvestres, terminado con aceite de trufa y parmesano reggiano de 24 meses.",
             difficulty: "Media",
             cooking_time: "45 min",
             servings: 4,
@@ -82,7 +86,7 @@ const FEATURED_RECIPES: RecipeDB[] = [
         id: 99902,
         main_image_url: "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?q=80&w=1200&auto=format&fit=crop",
         recipe_metadata: {
-            title: "Salmón Noruego al Limón",
+            title: "Salmón al Limón de la Tía",
             description: "Filetes de salmón fresco horneados con una costra de hierbas, acompañados de espárragos trigueros y una salsa ligera de mantequilla y limón.",
             difficulty: "Fácil",
             cooking_time: "25 min",
@@ -112,8 +116,8 @@ const FEATURED_RECIPES: RecipeDB[] = [
         id: 99903,
         main_image_url: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1200&auto=format&fit=crop",
         recipe_metadata: {
-            title: "Cheesecake de Frutos Rojos",
-            description: "Una versión ligera y sin horno de la clásica tarta de queso, con una base de galleta crujiente y un coulis casero de frutos del bosque.",
+            title: "Tarta de Queso Sin Horno",
+            description: "Una versión ligera de la clásica tarta de queso, con una base de galleta crujiente y un coulis casero de frutos del bosque. Imposible fallar.",
             difficulty: "Fácil",
             cooking_time: "20 min (+3h frío)",
             servings: 8,
@@ -149,7 +153,7 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
   const [chefTab, setChefTab] = useState<'styles' | 'featured'>('styles');
 
   const triggerChefSpecial = (preset: typeof CHEF_STYLES[0]) => {
-    const prompt = `Crea un plato espectacular y único (${preset.dish} o similar) siguiendo estrictamente este estilo: ${preset.style}. Sorpréndeme con algo digno de un restaurante.`;
+    const prompt = `Actúa como ${preset.name} (${preset.subtitle}). Crea un plato espectacular y único (${preset.dish} o similar) siguiendo estrictamente este estilo: ${preset.style}. Sorpréndeme como si fuera tu nieto favorito.`;
     navigate('/app/generate', { 
         state: { 
             autoTrigger: true,
@@ -170,9 +174,9 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
     <div className="w-full">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 px-1 gap-4">
             <div className="flex items-center gap-2">
-                <ChefHat className={`text-primary ${variant === 'full' ? 'w-8 h-8' : 'w-6 h-6'}`} />
+                <Heart className={`text-primary ${variant === 'full' ? 'w-8 h-8' : 'w-6 h-6'}`} />
                 <h2 className={`${variant === 'full' ? 'text-3xl' : 'text-2xl'} font-bold text-gray-900 dark:text-white`}>
-                    La Mesa del Chef
+                    La Mesa de la Nonna
                 </h2>
             </div>
             
@@ -181,13 +185,13 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
                 onClick={() => setChefTab('styles')}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${chefTab === 'styles' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                 >
-                Estilos de Cocina
+                Sus Secretos
                 </button>
                 <button 
                 onClick={() => setChefTab('featured')}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${chefTab === 'featured' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}
                 >
-                Carta de Temporada
+                Recetas de Familia
                 </button>
             </div>
         </div>
@@ -198,7 +202,7 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
                 <button
                     key={preset.id}
                     onClick={() => triggerChefSpecial(preset)}
-                    className="group relative h-64 rounded-2xl overflow-hidden text-left shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                    className="group relative h-72 rounded-2xl overflow-hidden text-left shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
                 >
                     <img 
                     src={preset.image} 
@@ -209,13 +213,14 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
                     
                     <div className="absolute bottom-0 left-0 p-5 w-full">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 bg-gradient-to-br ${preset.color} text-white shadow-lg`}>
-                        <Star className="w-5 h-5 fill-current" />
+                        <Flower2 className="w-5 h-5 fill-current" />
                         </div>
-                        <h3 className="text-white font-bold text-lg leading-tight mb-1">{preset.name}</h3>
-                        <p className="text-gray-300 text-xs line-clamp-2 mb-2">{preset.description}</p>
-                        <div className="flex items-center gap-1 text-orange-300 text-xs font-bold uppercase tracking-wider">
-                        <Flame className="w-3 h-3" />
-                        <span>Crear Estilo</span>
+                        <h3 className="text-white font-bold text-lg leading-tight">{preset.name}</h3>
+                        <span className="text-primary text-xs font-bold uppercase tracking-widest mb-1 block">{preset.subtitle}</span>
+                        <p className="text-gray-300 text-xs line-clamp-2 mb-2 leading-relaxed">{preset.description}</p>
+                        <div className="flex items-center gap-1 text-white/80 text-xs font-medium border-t border-white/20 pt-2 mt-2">
+                            <Flame className="w-3 h-3 text-orange-400" />
+                            <span>Cocinar estilo {preset.name.split(' ')[1]}</span>
                         </div>
                     </div>
                 </button>
