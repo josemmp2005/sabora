@@ -47,8 +47,6 @@ const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfileType>(DEFAULT_USER_PROFILE);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
-  const [dashboardKey, setDashboardKey] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -158,7 +156,6 @@ const App: React.FC = () => {
                     element={
                       <ProtectedRoute session={session} loading={loading}>
                         <Dashboard 
-                          key={dashboardKey}
                           userProfile={userProfile} 
                           session={session}
                         />
