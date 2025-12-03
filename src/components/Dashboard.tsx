@@ -197,7 +197,7 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
         </div>
 
         {/* Chef Table Widget */}
-        <ChefTableWidget />
+        <ChefTableWidget isLocked={!limits.hasChefChat} />
         
         {/* Recent History */}
         <div className="border-t border-gray-100 dark:border-gray-700 pt-8">
