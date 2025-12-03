@@ -13,10 +13,10 @@ export const Logo: React.FC<LogoProps> = ({
   textClassName = "text-2xl",
 }) => {
   return (
-    <div className="flex items-center gap-3 select-none">
+    <div className="flex items-center gap-3 select-non">
       <img src={logoSrc} alt="Nonnapp Logo" className={className} />
       {showText && (
-        <span className={`font-parisienne font-bold font tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-orange-500 to-orange-700 ${textClassName}`}>
+        <span className={`font-parisienne font-bold font tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-orange-500 to-orange-700 pl-0.5 mt-[7px] ${textClassName}`}>
           Nonnapp
         </span>
       )}
