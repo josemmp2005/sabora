@@ -117,10 +117,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleNewRecipe = () => {
-    setDashboardKey(prev => prev + 1);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center transition-colors duration-300">
@@ -149,7 +145,6 @@ const App: React.FC = () => {
         <ErrorBoundary>
           <Router>
             <Layout 
-              onNewRecipe={handleNewRecipe}
               session={session}
             >
               <Suspense fallback={<PageLoader />}>

@@ -21,17 +21,13 @@
     isOpen: boolean;
     onClose: () => void;
     onLogout: () => void;
-    onNewRecipe: () => void;
-    onOpenHistory: () => void;
   }
 
   const Sidebar: React.FC<SidebarProps> = ({ 
     session, 
     isOpen, 
     onClose, 
-    onLogout, 
-    onNewRecipe,
-    onOpenHistory
+    onLogout
   }) => {
     const navigate = useNavigate();
     const location = useLocation();

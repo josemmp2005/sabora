@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChefHat, Flame, Star, BookOpen, ArrowRight, Heart, Flower2 } from 'lucide-react';
+import { Flame, BookOpen, ArrowRight, Heart, Flower2 } from 'lucide-react';
 import type { RecipeDB } from '../types';
 
 // Estilos de "Nonnas" Predefinidos

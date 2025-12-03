@@ -5,7 +5,7 @@ import RecipeForm from './RecipeForm';
 import RecipeDisplay from './RecipeDisplay';
 import LoadingOverlay from './LoadingOverlay';
 import { generateRecipeAI, generateRecipeImage } from '../services/gemini-edge';
-import { checkSmartCache, saveRecipeToDB, fetchRecentRecipes } from '../services/supabase';
+import { checkSmartCache, saveRecipeToDB } from '../services/supabase';
 import type{ AIRecipeResponse, UserProfile, GenerationParams } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Sparkles } from 'lucide-react';

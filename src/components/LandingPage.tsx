@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Zap, Heart, ArrowRight, ChefHat, PlayCircle, Infinity, Check, Utensils, Star, Flower2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ChefHat, PlayCircle, Check, Utensils, Star, Flower2 } from 'lucide-react';
 import tomatoSoup from '../assets/tomato-soup.webp';
 
 const LandingPage: React.FC = () => {

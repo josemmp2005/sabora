@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import HistoryList from './HistoryList';
 import { fetchRecentRecipes } from '../services/supabase';
 import type { UserProfile as UserProfileType, RecipeDB } from '../types';
-import { useToast } from '../context/ToastContext';
 import { Sparkles, Coffee, Zap, Utensils, ArrowRight } from 'lucide-react';
 import ChefTableWidget from './ChefTableWidget';
 
@@ -15,7 +14,6 @@ interface Props {
 
 const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
   const [recentRecipes, setRecentRecipes] = useState<RecipeDB[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [quickInput, setQuickInput] = useState('');

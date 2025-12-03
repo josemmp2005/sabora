@@ -8,11 +8,10 @@ import { useTheme } from '../context/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
-  onNewRecipe: () => void;
   session: any;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
+const Layout: React.FC<LayoutProps> = ({ children, session }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -39,11 +38,6 @@ const Layout: React.FC<LayoutProps> = ({ children, onNewRecipe, session }) => {
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           onLogout={handleLogout}
-          onNewRecipe={onNewRecipe}
-          onOpenHistory={() => {
-             const historyEl = document.getElementById('history-section');
-             if(historyEl) historyEl.scrollIntoView({ behavior: 'smooth' });
-          }}
         />
 
         <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 z-30 shadow-sm flex items-center px-4 justify-between border-b border-gray-100 dark:border-gray-700">
