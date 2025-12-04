@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Clock, Users, Flame, UtensilsCrossed, RefreshCw, Share2, PlayCircle, ShoppingCart, Camera, Loader2, Printer, Lock } from 'lucide-react';
+import { Clock, Users, Flame, UtensilsCrossed, RefreshCw, Share2, PlayCircle, ShoppingCart, Camera, Loader2, Printer, Lock, Crown } from 'lucide-react';
 import type { AIRecipeResponse } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import CookMode from './CookMode';
 import ShoppingListModal from './ShoppingListModal';
 import ChefChat from './ChefChat';
@@ -17,6 +18,7 @@ interface Props {
 const RecipeDisplay: React.FC<Props> = ({ recipe, imageUrl, onGenerateAgain, isPro = false }) => {
   const { recipe_metadata, ingredients, utensils, steps } = recipe;
   const { showToast } = useToast();
+  const { limits } = useSubscription();
   
   const [isCookModeOpen, setIsCookModeOpen] = useState(false);
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
@@ -24,6 +26,12 @@ const RecipeDisplay: React.FC<Props> = ({ recipe, imageUrl, onGenerateAgain, isP
   // State for step images
   const [stepImages, setStepImages] = useState<Record<number, string>>({});
   const [loadingSteps, setLoadingSteps] = useState<Record<number, boolean>>({});
+
+  const handleChefChatClick = () => {
+    if (!limits.hasChefChat) {
+      showToast('El chat con el Chef está disponible en los planes La Mamma y La Nonna. ¡Actualiza para disfrutarlo!', 'info');
+    }
+  };
 
   const handleCopyRecipe = () => {
     const text = `
@@ -83,7 +91,20 @@ Generado por nonnapp
       {/* Modals - Hidden when printing */}
       {!isCookModeOpen && !isShoppingListOpen && (
          <div className="no-print">
-            <ChefChat recipe={recipe} />
+            {limits.hasChefChat ? (
+              <ChefChat recipe={recipe} />
+            ) : (
+              <button
+                onClick={handleChefChatClick}
+                className="fixed bottom-24 right-4 md:right-8 z-40 bg-gradient-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-primary text-white p-4 rounded-full shadow-2xl hover:shadow-primary/50 transition-all hover:scale-110 active:scale-95 group"
+                title="Chat con el Chef (Premium)"
+              >
+                <div className="relative">
+                  <Lock className="w-6 h-6" />
+                  <Crown className="w-3 h-3 absolute -top-1 -right-1 text-amber-300" />
+                </div>
+              </button>
+            )}
          </div>
       )}
 

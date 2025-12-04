@@ -33,6 +33,26 @@ export interface AIRecipeResponse {
   steps: StepItem[];
 }
 
+// Subscription Types
+export type SubscriptionPlan = 'Nipote' | 'Mamma' | 'Nonna';
+
+export interface SubscriptionData {
+  plan_type: SubscriptionPlan;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface SubscriptionLimits {
+  maxRecipesPerDay: number;
+  hasAdvancedPantry: boolean;
+  hasImageGeneration: boolean;
+  hasChefChat: boolean;
+  hasWeeklyPlanner: boolean;
+  hasFullHistory: boolean;
+  hasPrioritySupport: boolean;
+}
+
 // Estructura para la UI y Base de Datos (simplificado para frontend)
 export interface UserProfile {
   allergies: string;
@@ -41,7 +61,7 @@ export interface UserProfile {
   use_allergies?: boolean;
   use_utensils?: boolean;
   available_utensils?: string;
-  is_pro?: boolean; // New field for subscription status
+  is_pro?: boolean; // Deprecated: usar SubscriptionContext
 }
 
 export interface RecipeDB extends AIRecipeResponse {

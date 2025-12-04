@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Clock, Flame, ChevronRight, Loader2, Calendar, Filter, ArrowDownUp } from 'lucide-react';
+import { Search, Clock, Flame, ChevronRight, Loader2, Calendar, Filter, ArrowDownUp, Lock, Crown } from 'lucide-react';
 import type { RecipeDB } from '../types';
 import { fetchUserHistory } from '../services/supabase';
+import { useSubscription } from '../context/SubscriptionContext';
 
 interface Props {
   session: any;
@@ -11,6 +12,7 @@ interface Props {
 const HistoryPage: React.FC<Props> = ({ session }) => {
   const [recipes, setRecipes] = useState<RecipeDB[]>([]);
   const [loading, setLoading] = useState(true);
+  const { limits } = useSubscription();
   
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState('all');
@@ -48,6 +50,13 @@ const HistoryPage: React.FC<Props> = ({ session }) => {
       const dateB = new Date(b.created_at || 0).getTime();
       return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
     });
+
+  // Limit history for free users (Nipote)
+  const FREE_HISTORY_LIMIT = 3;
+  const displayRecipes = limits.hasFullHistory 
+    ? filteredRecipes 
+    : filteredRecipes.slice(0, FREE_HISTORY_LIMIT);
+  const hasMoreRecipes = !limits.hasFullHistory && filteredRecipes.length > FREE_HISTORY_LIMIT;
 
   return (
     <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-20">
@@ -119,8 +128,9 @@ const HistoryPage: React.FC<Props> = ({ session }) => {
            </button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRecipes.map((recipe) => (
+        <>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayRecipes.map((recipe) => (
             <div 
               key={recipe.id}
               onClick={() => navigate(`/app/recipe/${recipe.id}`)}
@@ -180,6 +190,32 @@ const HistoryPage: React.FC<Props> = ({ session }) => {
             </div>
           ))}
         </div>
+
+        {/* Upgrade Banner for Free Users */}
+        {hasMoreRecipes && (
+          <div className="mt-8 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border-2 border-amber-200 dark:border-amber-700 p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-2">
+              <Crown className="w-6 h-6 text-amber-500" />
+              Desbloquea tu Historial Completo
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-2xl mx-auto">
+              Tienes <strong>{filteredRecipes.length - FREE_HISTORY_LIMIT} recetas más</strong> esperándote. 
+              Actualiza a <strong>La Mamma</strong> o <strong>La Nonna</strong> para acceder a todo tu historial de recetas.
+            </p>
+            <button
+              onClick={() => navigate('/app/profile')}
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl transition-all hover:scale-105 shadow-lg"
+            >
+              Ver Planes Premium
+            </button>
+          </div>
+        )}
+      </>
       )}
     </div>
   );

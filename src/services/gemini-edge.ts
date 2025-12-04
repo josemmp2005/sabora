@@ -2,6 +2,10 @@ import { SUPABASE_URL } from "../constants";
 import type { AIRecipeResponse, UserProfile } from "../types";
 import { supabaseClient } from "./supabase";
 import { geminiRateLimiter, recipeCache } from "../utils/rateLimiter";
+import { getMockRecipe } from "./mock-recipe";
+
+// 🚨 DESARROLLO: Activa esto si la API de Gemini está en rate limit (429)
+const USE_MOCK_RECIPE = false; // Cambia a true para usar datos de prueba
 
 /**
  * Generate recipe using Supabase Edge Function
@@ -16,6 +20,13 @@ export const generateRecipeAI = async (
   servings?: number,
   utensils?: string
 ): Promise<AIRecipeResponse> => {
+  
+  // 🚨 MOCK MODE: Para desarrollo cuando API está en límite
+  if (USE_MOCK_RECIPE) {
+    console.warn('⚠️ USANDO DATOS MOCK - Gemini API en rate limit');
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
+    return getMockRecipe(prompt);
+  }
   
   // Crear clave de caché basada en los parámetros
   const cacheKey = JSON.stringify({ prompt, mode, ingredients, servings, timeLimit, utensils });

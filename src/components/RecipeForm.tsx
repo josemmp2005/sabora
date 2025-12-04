@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
-import { Wand2, Search, Refrigerator, Clock } from 'lucide-react';
+import { Wand2, Search, Refrigerator, Clock, Lock } from 'lucide-react';
 import type { GenerationParams } from '../types';
 
 interface Props {
   isLoading: boolean;
   onSubmit: (params: GenerationParams) => void;
+  hasAdvancedPantry?: boolean;
 }
 
-const RecipeForm: React.FC<Props> = ({ isLoading, onSubmit }) => {
+const RecipeForm: React.FC<Props> = ({ isLoading, onSubmit, hasAdvancedPantry = true }) => {
   const [mode, setMode] = useState<'text' | 'pantry'>('text');
   const [input, setInput] = useState('');
   const [servings, setServings] = useState(2);
   const [timeLimit, setTimeLimit] = useState('unlimited');
+
+  const handleModeChange = (newMode: 'text' | 'pantry') => {
+    if (newMode === 'pantry' && !hasAdvancedPantry) {
+      return; // No permitir cambio si no tiene acceso
+    }
+    setMode(newMode);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,18 +38,29 @@ const RecipeForm: React.FC<Props> = ({ isLoading, onSubmit }) => {
     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-primary/5 border border-white dark:border-gray-700 overflow-hidden transition-colors duration-300">
       <div className="flex border-b border-gray-100 dark:border-gray-700">
         <button 
-          onClick={() => setMode('text')}
+          onClick={() => handleModeChange('text')}
           className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === 'text' ? 'bg-primary/5 dark:bg-primary/10 text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
         >
           <Wand2 className="w-4 h-4" />
           Modo Creativo
         </button>
         <button 
-          onClick={() => setMode('pantry')}
-          className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${mode === 'pantry' ? 'bg-primary/5 dark:bg-primary/10 text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+          onClick={() => handleModeChange('pantry')}
+          disabled={!hasAdvancedPantry}
+          className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative ${
+            !hasAdvancedPantry 
+              ? 'opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600' 
+              : mode === 'pantry' 
+                ? 'bg-primary/5 dark:bg-primary/10 text-primary border-b-2 border-primary' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+          }`}
+          title={!hasAdvancedPantry ? 'Disponible en plan La Mamma' : ''}
         >
           <Refrigerator className="w-4 h-4" />
           Modo Despensa
+          {!hasAdvancedPantry && (
+            <Lock className="w-3 h-3 absolute top-2 right-2 text-amber-500" />
+          )}
         </button>
       </div>
 

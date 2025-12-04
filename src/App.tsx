@@ -9,6 +9,7 @@ import { supabaseClient } from './services/supabase';
 import { Logo } from './components/Logo';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy Load Components for Performance
@@ -21,6 +22,7 @@ const ProfileEditPage = lazy(() => import('./components/ProfileEditPage'));
 const HistoryPage = lazy(() => import('./components/HistoryPage'));
 const RecipeDetailPage = lazy(() => import('./components/RecipeDetailPage'));
 const TermsPage = lazy(() => import('./components/TermsPage'));
+const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 // Protected Route Component
@@ -140,16 +142,18 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ErrorBoundary>
-          <Router>
-            <Layout 
-              session={session}
-            >
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app" replace />} />
-                  <Route path="/terms" element={<TermsPage />} />
+        <SubscriptionProvider>
+          <ErrorBoundary>
+            <Router>
+              <Layout 
+                session={session}
+              >
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app" replace />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
                   
                   <Route 
                     path="/app" 
@@ -223,6 +227,7 @@ const App: React.FC = () => {
             </Layout>
           </Router>
         </ErrorBoundary>
+        </SubscriptionProvider>
       </ToastProvider>
     </ThemeProvider>
   );

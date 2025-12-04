@@ -37,6 +37,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export const supabaseClient = supabase;
 
+// Exponer en window para debugging (solo en desarrollo)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  (window as any).supabaseClient = supabase;
+  console.log('🔧 [Debug] supabaseClient available at window.supabaseClient');
+}
+
 /* --- AUTHENTICATION --- */
 
 export const signInWithEmail = async (email: string, password: string) => {
@@ -54,6 +60,20 @@ export const signUpWithEmail = async (email: string, password: string, metadata?
     options: {
       data: metadata // This saves username and avatar_url to raw_user_meta_data
     }
+  });
+  return { data, error };
+};
+
+export const signInWithGoogle = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/app`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
   });
   return { data, error };
 };
@@ -284,6 +304,7 @@ export const checkSmartCache = async (prompt: string): Promise<RecipeDB | null> 
 
 /**
  * Saves a generated recipe to the database following strict Schema:
+ * Throws specific error if daily limit is exceeded (RLS policy)
  */
 export const saveRecipeToDB = async (
   userId: string | undefined,
@@ -317,9 +338,20 @@ export const saveRecipeToDB = async (
       .select()
       .single();
 
-    if (recipeError || !recipeData) {
+    if (recipeError) {
+      // Detectar error de política RLS (límite diario)
+      if (recipeError.code === '42501' || recipeError.message?.includes('policy')) {
+        const limitError = new Error('DAILY_LIMIT_EXCEEDED');
+        limitError.name = 'DailyLimitError';
+        throw limitError;
+      }
+      
       console.error("Error saving recipe header:", JSON.stringify(recipeError, null, 2));
       throw recipeError;
+    }
+
+    if (!recipeData) {
+      throw new Error('No recipe data returned');
     }
 
     const recipeId = recipeData.id;

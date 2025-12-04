@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, ArrowRight, Heart, Flower2 } from 'lucide-react';
+import { Flame, BookOpen, ArrowRight, Heart, Flower2, Lock, Crown } from 'lucide-react';
 import type { RecipeDB } from '../types';
+import { useToast } from '../context/ToastContext';
 
 // Estilos de "Nonnas" Predefinidos
 const CHEF_STYLES = [
@@ -146,13 +147,19 @@ const FEATURED_RECIPES: RecipeDB[] = [
 
 interface Props {
   variant?: 'dashboard' | 'full';
+  isLocked?: boolean;
 }
 
-const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
+const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard', isLocked = false }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [chefTab, setChefTab] = useState<'styles' | 'featured'>('styles');
 
   const triggerChefSpecial = (preset: typeof CHEF_STYLES[0]) => {
+    if (isLocked) {
+      showToast('La Mesa de la Nonna está disponible en los planes La Mamma y La Nonna. ¡Actualiza para disfrutarlo!', 'info');
+      return;
+    }
     const prompt = `Actúa como ${preset.name} (${preset.subtitle}). Crea un plato espectacular y único (${preset.dish} o similar) siguiendo estrictamente este estilo: ${preset.style}. Sorpréndeme como si fuera tu nieto favorito.`;
     navigate('/app/generate', { 
         state: { 
@@ -165,6 +172,10 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
   };
 
   const openFeaturedRecipe = (recipe: RecipeDB) => {
+    if (isLocked) {
+      showToast('Las Recetas de Familia están disponibles en los planes La Mamma y La Nonna. ¡Actualiza para disfrutarlas!', 'info');
+      return;
+    }
     navigate(`/app/recipe/featured-${recipe.id}`, {
         state: { recipeData: recipe }
     });
@@ -202,14 +213,30 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
                 <button
                     key={preset.id}
                     onClick={() => triggerChefSpecial(preset)}
-                    className="group relative h-72 rounded-2xl overflow-hidden text-left shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                    className={`group relative h-72 rounded-2xl overflow-hidden text-left shadow-md hover:shadow-xl transition-all ${isLocked ? 'cursor-not-allowed' : 'hover:-translate-y-1'}`}
+                    disabled={isLocked}
                 >
                     <img 
                     src={preset.image} 
                     alt={preset.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 ${isLocked ? 'filter grayscale opacity-60' : 'group-hover:scale-110'}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                    
+                    {/* Lock Overlay */}
+                    {isLocked && (
+                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 backdrop-blur-sm">
+                        <div className="text-center">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-3 shadow-xl">
+                            <Lock className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-white font-bold text-sm flex items-center gap-1 justify-center">
+                            <Crown className="w-4 h-4 text-amber-300" />
+                            Premium
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="absolute bottom-0 left-0 p-5 w-full">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 bg-gradient-to-br ${preset.color} text-white shadow-lg`}>
@@ -232,21 +259,30 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard' }) => {
                 <div 
                     key={recipe.id}
                     onClick={() => openFeaturedRecipe(recipe)}
-                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all cursor-pointer group overflow-hidden flex flex-col"
+                    className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all group overflow-hidden flex flex-col relative ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                     <div className="h-48 relative overflow-hidden">
                         <img 
                             src={recipe.main_image_url} 
                             alt={recipe.recipe_metadata.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                            className={`w-full h-full object-cover transition-transform duration-700 ${isLocked ? 'filter grayscale opacity-60' : 'group-hover:scale-105'}`}
                         />
                         <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-gray-900 dark:text-white shadow-sm flex items-center gap-1">
                             <BookOpen className="w-3 h-3 text-primary" /> Receta
                         </div>
+                        
+                        {/* Lock Overlay */}
+                        {isLocked && (
+                          <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 backdrop-blur-sm">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl">
+                              <Lock className="w-7 h-7 text-white" />
+                            </div>
+                          </div>
+                        )}
                     </div>
-                    <div className="p-5 flex-grow flex flex-col">
+                    <div className={`p-5 flex-grow flex flex-col ${isLocked ? 'opacity-60' : ''}`}>
                         <div className="mb-2">
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md mb-2 inline-block">
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-orange-50 dark:bg-orange-900/20 p       x-2 py-1 rounded-md mb-2 inline-block">
                                 {recipe.recipe_metadata.difficulty} • {recipe.recipe_metadata.cooking_time}
                             </span>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight group-hover:text-primary transition-colors">
