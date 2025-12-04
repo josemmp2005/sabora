@@ -6,7 +6,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import ChefTableWidget from './ChefTableWidget';
 
 const ChefPage: React.FC = () => {
-  const { limits, subscription } = useSubscription();
+  const { limits } = useSubscription();
   const navigate = useNavigate();
 
   // Si no tiene acceso a la mesa de la nonna, mostrar paywall

@@ -13,7 +13,7 @@ interface Props {
   session: any;
 }
 
-const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
+const Dashboard: React.FC<Props> = ({ session }) => {
   const navigate = useNavigate();
   const { subscription, limits, checkRecipeLimit } = useSubscription();
   const [recentRecipes, setRecentRecipes] = useState<RecipeDB[]>([]);
@@ -82,10 +82,10 @@ const Dashboard: React.FC<Props> = ({ userProfile, session }) => {
 
   // Calcular recetas restantes hoy
   const { remaining } = checkRecipeLimit();
-  const planNames = {
-    nipote: 'Nipote',
-    la_mamma: 'La Mamma',
-    la_nonna: 'La Nonna'
+  const planNames: Record<string, string> = {
+    'Nipote': 'Nipote',
+    'Mamma': 'La Mamma',
+    'Nonna': 'La Nonna'
   };
 
   return (

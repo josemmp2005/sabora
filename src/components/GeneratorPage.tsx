@@ -60,7 +60,7 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
     }
 
     // Check recipe limit for free users
-    const { canGenerate, remaining } = checkRecipeLimit();
+      const { canGenerate } = checkRecipeLimit();
     if (!canGenerate) {
       showToast('Has alcanzado el límite de 2 recetas diarias. Actualiza a La Mamma para recetas ilimitadas.', 'error');
       return;
@@ -123,7 +123,7 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
           if (remaining === 1) {
             showToast('Receta guardada. Te queda 1 receta hoy.', 'success');
           } else if (remaining === 0) {
-            showToast('Receta guardada. Has usado tus 2 recetas diarias.', 'warning');
+            showToast('Receta guardada. Has usado tus 2 recetas diarias.', 'success');
           } else {
             showToast('Receta generada y guardada.', 'success');
           }
@@ -138,7 +138,7 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
           }
           // Otro tipo de error al guardar
           console.error('Error saving recipe:', saveError);
-          showToast('Receta generada pero no se pudo guardar. Por favor, intenta de nuevo.', 'warning');
+          showToast('Receta generada pero no se pudo guardar. Por favor, intenta de nuevo.', 'error');
         }
       }
 
@@ -175,7 +175,7 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
           </div>
 
           {/* Recipe Limit Banner for Free Users */}
-          {subscription.plan_type === 'nipote' && (
+          {subscription.plan_type === 'Nipote' && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 shadow-sm">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
