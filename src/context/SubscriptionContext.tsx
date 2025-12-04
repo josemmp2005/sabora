@@ -16,7 +16,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 // Límites por plan
 const PLAN_LIMITS: Record<SubscriptionPlan, SubscriptionLimits> = {
-  nipote: {
+  Nipote: {
     maxRecipesPerDay: 2,
     hasAdvancedPantry: false,
     hasImageGeneration: false,
@@ -25,7 +25,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, SubscriptionLimits> = {
     hasFullHistory: false,
     hasPrioritySupport: false,
   },
-  la_mamma: {
+  Mamma: {
     maxRecipesPerDay: Infinity,
     hasAdvancedPantry: true,
     hasImageGeneration: true,
@@ -34,7 +34,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, SubscriptionLimits> = {
     hasFullHistory: true,
     hasPrioritySupport: false,
   },
-  la_nonna: {
+  Nonna: {
     maxRecipesPerDay: Infinity,
     hasAdvancedPantry: true,
     hasImageGeneration: true,
@@ -46,7 +46,7 @@ const PLAN_LIMITS: Record<SubscriptionPlan, SubscriptionLimits> = {
 };
 
 const DEFAULT_SUBSCRIPTION: SubscriptionData = {
-  plan_type: 'nipote',
+  plan_type: 'Nipote',
   is_active: true,
   start_date: null,
   end_date: null,
@@ -75,7 +75,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         .select('plan_type, is_active, start_date, end_date')
         .eq('user_id', session.user.id)
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) {

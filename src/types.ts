@@ -34,7 +34,7 @@ export interface AIRecipeResponse {
 }
 
 // Subscription Types
-export type SubscriptionPlan = 'nipote' | 'la_mamma' | 'la_nonna';
+export type SubscriptionPlan = 'Nipote' | 'Mamma' | 'Nonna';
 
 export interface SubscriptionData {
   plan_type: SubscriptionPlan;

@@ -37,6 +37,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export const supabaseClient = supabase;
 
+// Exponer en window para debugging (solo en desarrollo)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  (window as any).supabaseClient = supabase;
+  console.log('🔧 [Debug] supabaseClient available at window.supabaseClient');
+}
+
 /* --- AUTHENTICATION --- */
 
 export const signInWithEmail = async (email: string, password: string) => {
