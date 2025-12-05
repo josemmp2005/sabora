@@ -95,7 +95,7 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('🔄 Auth state changed:', event, session ? `User: ${session.user?.email}` : 'No session');
       
       if (!mounted) return;
 
@@ -106,6 +106,7 @@ const App: React.FC = () => {
       }
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        console.log('✅ Usuario autenticado:', session?.user?.email);
         setSession(session);
         setUserProfile(DEFAULT_USER_PROFILE);
       }

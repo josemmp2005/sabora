@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, DEFAULT_USER_PROFILE } from '../constants';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, DEFAULT_USER_PROFILE, OAUTH_REDIRECT_URL } from '../constants';
 import type { RecipeDB, AIRecipeResponse, UserProfile } from '../types';
 
 
@@ -9,6 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
+    debug: import.meta.env.DEV, // Enable debug logs in development
     storage: {
       getItem: (key) => {
         if (typeof window !== 'undefined') {
@@ -37,7 +38,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export const supabaseClient = supabase;
 
-// Exponer en window para debugging (solo en desarrollo)
+// Exponer en window para debugging (so// Exponer en window para debugging (solo en desarrollo)
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   (window as any).supabaseClient = supabase;
   console.log('🔧 [Debug] supabaseClient available at window.supabaseClient');
@@ -65,16 +66,26 @@ export const signUpWithEmail = async (email: string, password: string, metadata?
 };
 
 export const signInWithGoogle = async () => {
+  console.log('🔑 Iniciando OAuth con Google...');
+  console.log('📍 Redirect URL:', `${OAUTH_REDIRECT_URL}/app`);
+  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/app`,
+      redirectTo: `${OAUTH_REDIRECT_URL}/app`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
       },
     },
   });
+  
+  if (error) {
+    console.error('❌ Error en signInWithGoogle:', error);
+  } else {
+    console.log('✅ OAuth iniciado correctamente');
+  }
+  
   return { data, error };
 };
 
@@ -352,27 +363,7 @@ export const saveRecipeToDB = async (
 
     if (!recipeData) {
       throw new Error('No recipe data returned');
-    }
-
-    const recipeId = recipeData.id;
-
-    // 2. Insert Steps
-    const stepsPayload = recipe.steps.map(step => ({
-      recipe_id: recipeId,
-      step_number: step.step_number,
-      instruction: step.instruction,
-      visual_tag: step.visual_tag,
-      visual_prompt: step.visual_prompt
-    }));
-    
-    const { error: stepsError } = await supabase.from('recipe_steps').insert(stepsPayload);
-    if (stepsError) console.error("Error saving steps:", JSON.stringify(stepsError, null, 2));
-
-    // 3. Handle Ingredients (Normalize)
-    for (const ing of recipe.ingredients) {
-      const normalizedName = ing.item.trim();
-      
-      // A. Upsert Ingredient 
+     // A. Upsert Ingredient 
       await supabase
         .from('ingredients')
         .upsert({ name: normalizedName }, { onConflict: 'name', ignoreDuplicates: true });
