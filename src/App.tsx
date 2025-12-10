@@ -23,6 +23,7 @@ const HistoryPage = lazy(() => import('./components/HistoryPage'));
 const RecipeDetailPage = lazy(() => import('./components/RecipeDetailPage'));
 const TermsPage = lazy(() => import('./components/TermsPage'));
 const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 // Protected Route Component
@@ -153,6 +154,7 @@ const App: React.FC = () => {
                   <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/app" replace />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                   

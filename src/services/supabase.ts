@@ -106,6 +106,30 @@ export const updateUserPassword = async (newPassword: string) => {
   return { data, error };
 };
 
+export const resetPassword = async (email: string) => {
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${OAUTH_REDIRECT_URL}/reset-password`,
+    });
+    
+    if (error) {
+      console.error('❌ Error al solicitar reset de contraseña:', error);
+      
+      // Proporcionar mensajes más específicos
+      if (error.message.includes('SMTP')) {
+        throw new Error('El servicio de correo no está configurado. Contacta al administrador.');
+      } else if (error.message.includes('rate limit')) {
+        throw new Error('Demasiados intentos. Espera unos minutos e intenta de nuevo.');
+      }
+    }
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error inesperado:', err);
+    throw err;
+  }
+};
+
 /* --- STORAGE & AVATARS --- */
 
 /**
