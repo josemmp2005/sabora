@@ -1,3 +1,45 @@
+# Sabora
+
+## Desarrollo local
+
+Requiere Docker (para Postgres) y Node 18+.
+
+```bash
+# 1. Levantar Postgres local (+ Adminer, interfaz web para ver la BBDD)
+docker compose up -d
+
+# 2. Backend (API propia: auth, recetas, IA, etc.)
+cd server
+cp .env.example .env   # y añade tu GEMINI_API_KEY
+npm install
+npm run db:init        # aplica server/src/schema.sql
+npm run dev             # http://localhost:3001
+
+# 3. Frontend (en otra terminal, desde la raíz)
+npm install
+npm run dev             # http://localhost:5173
+```
+
+El login es propio (email/password, JWT en cookie httpOnly) — Supabase ya no se usa en runtime.
+El código antiguo de Supabase (Edge Functions, parches SQL) queda archivado en `archive/` como referencia.
+
+### Ver la base de datos (Adminer)
+
+Con `docker compose up -d` levantado, entra en **http://localhost:8081** y conecta con:
+
+| Campo    | Valor    |
+|----------|----------|
+| Sistema  | PostgreSQL |
+| Servidor | `postgres` |
+| Usuario  | `sabora` |
+| Contraseña | `sabora` |
+| Base de datos | `sabora` |
+
+(El puerto es 8081, no el 8080 habitual de Adminer, porque esta máquina ya tenía otro Adminer ocupándolo.)
+Si prefieres un cliente de escritorio en vez del navegador, el mismo Postgres es accesible en `localhost:5434` con esas mismas credenciales (DBeaver, TablePlus, pgAdmin, etc.).
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
