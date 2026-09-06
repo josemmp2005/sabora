@@ -2,10 +2,14 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  // Cuerpo JSON completo de la respuesta de error, por si una ruta manda
+  // campos extra además de `error` (p.ej. `retryAfterSeconds` en 429s).
+  data: unknown;
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -35,7 +39,7 @@ export const apiFetch = async <T = unknown>(path: string, options: RequestOption
 
   if (!response.ok) {
     const message = (data && (data.error || data.message)) || `Error ${response.status}`;
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, data);
   }
 
   return data as T;

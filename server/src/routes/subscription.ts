@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { pool, withTransaction } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
+import { validateBody } from '../lib/validate.js';
+import { toggleSubscriptionSchema } from '../lib/schemas.js';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, requireVerifiedEmail);
 
 // El frontend (SubscriptionContext.tsx) usa 'Nipote' | 'Mamma' | 'Nonna';
 // la BBDD guarda un único enum canónico en minúsculas (ver schema.sql).
@@ -51,8 +53,8 @@ router.get('/', async (req, res) => {
 // Endpoint de DEMO (sin pasarela de pago real): permite al propio usuario
 // activar/desactivar el plan "Mamma" para probar las funciones premium.
 // Sigue exigiendo sesión y solo puede afectar a req.userId, nunca a otro usuario.
-router.post('/toggle', async (req, res) => {
-  const { currentStatus } = req.body ?? {};
+router.post('/toggle', validateBody(toggleSubscriptionSchema), async (req, res) => {
+  const { currentStatus } = req.body;
 
   try {
     await withTransaction(async (client) => {

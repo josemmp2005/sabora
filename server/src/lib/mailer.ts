@@ -12,7 +12,7 @@ const transporter =
 export const sendMail = async (to: string, subject: string, html: string, text?: string) => {
   if (!transporter) {
     console.warn('⚠️ GMAIL_USER/GMAIL_APP_PASSWORD no configurados: email no enviado (solo log).');
-    console.log(`[email omitido] to=${to} subject=${subject}`);
+    console.log(`[email omitido] to=${to} subject=${subject}${text ? `\n${text}` : ''}`);
     return { skipped: true };
   }
 

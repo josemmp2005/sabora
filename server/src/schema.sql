@@ -11,9 +11,14 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   username TEXT NOT NULL,
   avatar_url TEXT,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Por si la tabla ya existía de antes de añadir email_verified (CREATE TABLE
+-- IF NOT EXISTS no la habría añadido a una tabla preexistente).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -25,6 +30,30 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user_id ON email_verification_tokens(user_id);
+
+-- Sesiones server-side: el JWT de la cookie lleva el id de la fila (sid) además
+-- del user id. Permite revocar una sesión concreta (logout) o todas las de un
+-- usuario (cambio de contraseña / reset) sin esperar a que el JWT expire solo.
+CREATE TABLE IF NOT EXISTS sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
 -- Un único enum de plan_type. El código legado mezclaba 'nipote'/'Nipote'/'chef';
 -- aquí se fija a minúsculas y coincide con lo que usa SubscriptionContext.tsx.

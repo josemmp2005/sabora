@@ -2,14 +2,26 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import { pool, withTransaction } from '../db.js';
-import { requireAuth, signSessionToken, SESSION_COOKIE } from '../middleware/auth.js';
+import { requireAuth, createSession, revokeSession, revokeAllUserSessions, SESSION_COOKIE } from '../middleware/auth.js';
 import { isProd, env } from '../env.js';
 import { sendMail } from '../lib/mailer.js';
+import { createStrictAuthRateLimiter, createTokenRateLimiter } from '../middleware/rateLimit.js';
+import { validateBody } from '../lib/validate.js';
+import {
+  signupSchema,
+  loginSchema,
+  updateUsernameSchema,
+  updatePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  verifyEmailSchema,
+} from '../lib/schemas.js';
 
 const router = Router();
 
-const PASSWORD_MIN_LENGTH = 6;
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
+const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const RESEND_VERIFICATION_COOLDOWN_MS = 60 * 1000; // 1 min entre reenvíos por usuario
 
 const cookieOptions = {
   httpOnly: true,
@@ -21,23 +33,43 @@ const cookieOptions = {
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-const toPublicUser = (row: { id: string; email: string; username: string; avatar_url: string | null }) => ({
+const toPublicUser = (row: {
+  id: string;
+  email: string;
+  username: string;
+  avatar_url: string | null;
+  email_verified: boolean;
+}) => ({
   id: row.id,
   email: row.email,
   username: row.username,
   avatar_url: row.avatar_url,
+  email_verified: row.email_verified,
 });
 
-router.post('/signup', async (req, res) => {
-  const { email, password, username } = req.body ?? {};
+const sendVerificationEmail = async (userId: string, email: string, username: string) => {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_MS);
 
-  if (typeof email !== 'string' || typeof password !== 'string' || typeof username !== 'string' || !username.trim()) {
-    return res.status(400).json({ error: 'Faltan campos: email, password, username' });
-  }
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
-  }
+  await pool.query(
+    `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+    [userId, tokenHash, expiresAt]
+  );
 
+  const verifyLink = `${env.appUrl}/verify-email?token=${rawToken}`;
+  await sendMail(
+    email,
+    'Confirma tu email en Sabora',
+    `<p>Hola <strong>${username}</strong>, confirma tu email para verificar tu cuenta de Sabora.</p>
+     <p><a href="${verifyLink}">${verifyLink}</a></p>
+     <p>El enlace caduca en 24 horas.</p>`,
+    `Confirma tu email aquí: ${verifyLink} (caduca en 24 horas)`
+  );
+};
+
+router.post('/signup', createStrictAuthRateLimiter(), validateBody(signupSchema), async (req, res) => {
+  const { email, password, username } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
   try {
@@ -52,7 +84,7 @@ router.post('/signup', async (req, res) => {
       const { rows } = await client.query(
         `INSERT INTO users (email, password_hash, username)
          VALUES ($1, $2, $3)
-         RETURNING id, email, username, avatar_url`,
+         RETURNING id, email, username, avatar_url, email_verified`,
         [normalizedEmail, passwordHash, username.trim()]
       );
       const newUser = rows[0];
@@ -67,10 +99,13 @@ router.post('/signup', async (req, res) => {
       return newUser;
     });
 
-    const token = signSessionToken(user.id);
+    const { token } = await createSession(user.id);
     res.cookie(SESSION_COOKIE, token, cookieOptions);
 
     // Best-effort: un fallo de email no debe tumbar el registro.
+    sendVerificationEmail(user.id, user.email, user.username).catch((err) =>
+      console.warn('No se pudo enviar el email de verificación:', err)
+    );
     sendMail(
       user.email,
       '¡Bienvenido a Sabora! 🍳',
@@ -85,19 +120,14 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body ?? {};
-
-  if (typeof email !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ error: 'Faltan campos: email, password' });
-  }
-
+router.post('/login', createStrictAuthRateLimiter(), validateBody(loginSchema), async (req, res) => {
+  const { email, password } = req.body;
   const GENERIC_ERROR = { error: 'Credenciales inválidas' };
   const normalizedEmail = normalizeEmail(email);
 
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, username, avatar_url, password_hash FROM users WHERE email = $1',
+      'SELECT id, email, username, avatar_url, email_verified, password_hash FROM users WHERE email = $1',
       [normalizedEmail]
     );
 
@@ -111,7 +141,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json(GENERIC_ERROR);
     }
 
-    const token = signSessionToken(user.id);
+    const { token } = await createSession(user.id);
     res.cookie(SESSION_COOKIE, token, cookieOptions);
     return res.json({ user: toPublicUser(user) });
   } catch (err) {
@@ -120,7 +150,12 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/logout', (_req, res) => {
+router.post('/logout', requireAuth, async (req, res) => {
+  try {
+    await revokeSession(req.sessionId!);
+  } catch (err) {
+    console.warn('Error revocando sesión en logout:', err);
+  }
   res.clearCookie(SESSION_COOKIE, { ...cookieOptions, maxAge: undefined });
   return res.status(204).send();
 });
@@ -128,7 +163,7 @@ router.post('/logout', (_req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, username, avatar_url FROM users WHERE id = $1',
+      'SELECT id, email, username, avatar_url, email_verified FROM users WHERE id = $1',
       [req.userId]
     );
     if (rows.length === 0) {
@@ -141,16 +176,13 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 });
 
-router.patch('/me', requireAuth, async (req, res) => {
-  const { username } = req.body ?? {};
-  if (typeof username !== 'string' || !username.trim()) {
-    return res.status(400).json({ error: 'username es obligatorio' });
-  }
+router.patch('/me', requireAuth, validateBody(updateUsernameSchema), async (req, res) => {
+  const { username } = req.body;
 
   try {
     const { rows } = await pool.query(
       `UPDATE users SET username = $1, updated_at = NOW() WHERE id = $2
-       RETURNING id, email, username, avatar_url`,
+       RETURNING id, email, username, avatar_url, email_verified`,
       [username.trim(), req.userId]
     );
     return res.json({ user: toPublicUser(rows[0]) });
@@ -160,11 +192,8 @@ router.patch('/me', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/update-password', requireAuth, async (req, res) => {
-  const { password } = req.body ?? {};
-  if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {
-    return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
-  }
+router.post('/update-password', requireAuth, validateBody(updatePasswordSchema), async (req, res) => {
+  const { password } = req.body;
 
   try {
     const passwordHash = await bcrypt.hash(password, 12);
@@ -172,6 +201,10 @@ router.post('/update-password', requireAuth, async (req, res) => {
       passwordHash,
       req.userId,
     ]);
+    // Un JWT robado de una sesión antigua no debe seguir sirviendo tras
+    // cambiar la contraseña. La sesión actual (la que hizo el cambio) se
+    // conserva para no desloguear a quien lo acaba de pedir.
+    await revokeAllUserSessions(req.userId!, req.sessionId);
     return res.status(204).send();
   } catch (err) {
     console.error('Error actualizando contraseña:', err);
@@ -184,12 +217,8 @@ const GENERIC_FORGOT_RESPONSE = {
   message: 'Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña.',
 };
 
-router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body ?? {};
-  if (typeof email !== 'string' || !email.trim()) {
-    return res.status(400).json({ error: 'email es obligatorio' });
-  }
-
+router.post('/forgot-password', createStrictAuthRateLimiter(), validateBody(forgotPasswordSchema), async (req, res) => {
+  const { email } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
   try {
@@ -225,19 +254,12 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-router.post('/reset-password', async (req, res) => {
-  const { token, password } = req.body ?? {};
-  if (typeof token !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ error: 'Faltan campos: token, password' });
-  }
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres` });
-  }
-
+router.post('/reset-password', createTokenRateLimiter(), validateBody(resetPasswordSchema), async (req, res) => {
+  const { token, password } = req.body;
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   try {
-    await withTransaction(async (client) => {
+    const userId = await withTransaction(async (client) => {
       const { rows } = await client.query(
         `SELECT id, user_id FROM password_reset_tokens
          WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
@@ -249,15 +271,21 @@ router.post('/reset-password', async (req, res) => {
         throw Object.assign(new Error('Token inválido o expirado'), { status: 400 });
       }
 
-      const { id: tokenId, user_id: userId } = rows[0];
+      const { id: tokenId, user_id: uid } = rows[0];
       const passwordHash = await bcrypt.hash(password, 12);
 
       await client.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [
         passwordHash,
-        userId,
+        uid,
       ]);
       await client.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1', [tokenId]);
+      return uid as string;
     });
+
+    // Quien pide un reset por email no tiene "sesión actual" que conservar:
+    // se cierran todas, por si el token lo generó alguien con acceso a la
+    // cuenta de correo pero no a las sesiones ya abiertas del dueño real.
+    await revokeAllUserSessions(userId);
 
     return res.status(204).send();
   } catch (err: any) {
@@ -266,6 +294,76 @@ router.post('/reset-password', async (req, res) => {
     }
     console.error('Error en reset-password:', err);
     return res.status(500).json({ error: 'No se pudo restablecer la contraseña' });
+  }
+});
+
+router.post('/verify-email', createTokenRateLimiter(), validateBody(verifyEmailSchema), async (req, res) => {
+  const { token } = req.body;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  try {
+    await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, user_id FROM email_verification_tokens
+         WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+         FOR UPDATE`,
+        [tokenHash]
+      );
+
+      if (rows.length === 0) {
+        throw Object.assign(new Error('Enlace de verificación inválido o expirado'), { status: 400 });
+      }
+
+      const { id: tokenId, user_id: userId } = rows[0];
+      await client.query('UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1', [userId]);
+      await client.query('UPDATE email_verification_tokens SET used_at = NOW() WHERE id = $1', [tokenId]);
+    });
+
+    return res.status(204).send();
+  } catch (err: any) {
+    if (err?.status === 400) {
+      return res.status(400).json({ error: err.message });
+    }
+    console.error('Error en verify-email:', err);
+    return res.status(500).json({ error: 'No se pudo verificar el email' });
+  }
+});
+
+router.post('/resend-verification', requireAuth, createTokenRateLimiter(), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, email, username, email_verified FROM users WHERE id = $1',
+      [req.userId]
+    );
+    const user = rows[0];
+    if (!user) return res.status(401).json({ error: 'No autenticado' });
+    if (user.email_verified) {
+      return res.status(400).json({ error: 'El email ya está verificado' });
+    }
+
+    // Cooldown por usuario (además del rate limit por IP): evita que un
+    // click repetido dispare de golpe muchos envíos SMTP y tumbe/limite la
+    // cuenta de correo, o el proveedor la marque como spam.
+    const { rows: lastTokenRows } = await pool.query(
+      `SELECT created_at FROM email_verification_tokens WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [user.id]
+    );
+    const lastSentAt = lastTokenRows[0]?.created_at ? new Date(lastTokenRows[0].created_at) : null;
+    if (lastSentAt) {
+      const remainingMs = RESEND_VERIFICATION_COOLDOWN_MS - (Date.now() - lastSentAt.getTime());
+      if (remainingMs > 0) {
+        return res.status(429).json({
+          error: 'Espera antes de volver a pedir el email de verificación.',
+          retryAfterSeconds: Math.ceil(remainingMs / 1000),
+        });
+      }
+    }
+
+    await sendVerificationEmail(user.id, user.email, user.username);
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Error reenviando verificación:', err);
+    return res.status(500).json({ error: 'No se pudo reenviar el email de verificación' });
   }
 });
 

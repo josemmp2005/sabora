@@ -13,6 +13,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import EmailVerificationGate from './components/EmailVerificationGate';
 
 // Lazy Load Components for Performance
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -26,6 +27,7 @@ const RecipeDetailPage = lazy(() => import('./components/RecipeDetailPage'));
 const TermsPage = lazy(() => import('./components/TermsPage'));
 const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
 const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./components/VerifyEmailPage'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 // Protected Route Component
@@ -38,6 +40,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, session, loading }: ProtectedRouteProps) => {
   if (loading) return null;
   if (!session) return <Navigate to="/auth" replace />;
+  if (session.user?.email_verified === false) return <EmailVerificationGate email={session.user.email} />;
   return <>{children}</>;
 };
 
@@ -75,6 +78,13 @@ const App: React.FC = () => {
   // en vez de un listener global tipo onAuthStateChange.
   const handleAuthChange = (newSession: AuthSession | null) => {
     setSession(newSession);
+  };
+
+  // El backend ya marcó el email como verificado; refleja el flag localmente
+  // sin esperar a un refetch de /me (el usuario puede estar logueado en esta
+  // misma pestaña o venir de otra sesión con el link del correo).
+  const handleEmailVerified = () => {
+    setSession((prev) => (prev ? { user: { ...prev.user, email_verified: true } } : prev));
   };
 
   // Cargar preferencias reales del usuario cuando cambia la sesión.
@@ -129,6 +139,7 @@ const App: React.FC = () => {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/auth" element={!session ? <Auth onAuthChange={handleAuthChange} /> : <Navigate to="/app" replace />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage onEmailVerified={handleEmailVerified} />} />
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                   

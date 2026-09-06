@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   email: string;
   avatar_url: string | null;
+  email_verified: boolean;
   // Se conserva la forma `user_metadata.username` (heredada de Supabase) para
   // no tener que tocar todos los componentes que ya leen `session.user.user_metadata?.username`.
   user_metadata: { username: string };
@@ -17,12 +18,19 @@ interface AuthError {
   message: string;
 }
 
-type PublicUser = { id: string; email: string; username: string; avatar_url: string | null };
+type PublicUser = {
+  id: string;
+  email: string;
+  username: string;
+  avatar_url: string | null;
+  email_verified: boolean;
+};
 
 const toAuthUser = (user: PublicUser): AuthUser => ({
   id: user.id,
   email: user.email,
   avatar_url: user.avatar_url,
+  email_verified: user.email_verified,
   user_metadata: { username: user.username },
 });
 
@@ -118,5 +126,30 @@ export const resetPasswordWithToken = async (
     return { error: null };
   } catch (err) {
     return { error: asAuthError(err) };
+  }
+};
+
+export const verifyEmailWithToken = async (token: string): Promise<{ error: AuthError | null }> => {
+  try {
+    await apiFetch('/api/auth/verify-email', { method: 'POST', body: { token } });
+    return { error: null };
+  } catch (err) {
+    return { error: asAuthError(err) };
+  }
+};
+
+export const resendVerificationEmail = async (): Promise<{
+  error: AuthError | null;
+  retryAfterSeconds?: number;
+}> => {
+  try {
+    await apiFetch('/api/auth/resend-verification', { method: 'POST' });
+    return { error: null };
+  } catch (err) {
+    const retryAfterSeconds =
+      err instanceof ApiError && err.status === 429 && typeof (err.data as any)?.retryAfterSeconds === 'number'
+        ? (err.data as any).retryAfterSeconds
+        : undefined;
+    return { error: asAuthError(err), retryAfterSeconds };
   }
 };

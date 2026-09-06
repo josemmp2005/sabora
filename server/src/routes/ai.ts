@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
 import { env } from '../env.js';
 import { groqChat } from '../lib/groq.js';
+import { validateBody } from '../lib/validate.js';
+import { generateRecipeSchema, generateImageSchema, chatSchema } from '../lib/schemas.js';
 
 const router = Router();
-router.use(requireAuth);
+// Exige email verificado (igual que recipes/profile/subscription): una cuenta
+// sin verificar no puede usar nada de la app, no solo generar con IA.
+router.use(requireAuth, requireVerifiedEmail);
 
 const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
@@ -25,11 +29,8 @@ const RECIPE_JSON_FORMAT = `Responde ÚNICAMENTE con un objeto JSON válido (sin
   "steps": [ { "step_number": number, "instruction": "string", "visual_tag": "string", "visual_prompt": "string, descripción visual detallada del paso" } ]
 }`;
 
-router.post('/generate-recipe', async (req, res) => {
-  const { prompt, mode, ingredients, servings, timeLimit, utensils, userProfile } = req.body ?? {};
-  if (typeof prompt !== 'string' || !prompt.trim()) {
-    return res.status(400).json({ error: 'prompt es obligatorio' });
-  }
+router.post('/generate-recipe', validateBody(generateRecipeSchema), async (req, res) => {
+  const { prompt, mode, ingredients, servings, timeLimit, utensils, userProfile } = req.body;
 
   let systemInstruction = `
     Eres un chef experto asistido por IA.
@@ -75,16 +76,13 @@ router.post('/generate-recipe', async (req, res) => {
   }
 });
 
-router.post('/generate-image', async (req, res) => {
+router.post('/generate-image', validateBody(generateImageSchema), async (req, res) => {
   if (!env.geminiApiKey) {
     // Sin clave de Gemini configurada: se degrada a "sin imagen" en vez de romper el flujo.
     return res.json({ success: true, imageUrl: null });
   }
 
-  const { prompt } = req.body ?? {};
-  if (typeof prompt !== 'string' || !prompt.trim()) {
-    return res.status(400).json({ error: 'prompt es obligatorio' });
-  }
+  const { prompt } = req.body;
 
   try {
     const response = await ai.models.generateContent({
@@ -108,11 +106,8 @@ router.post('/generate-image', async (req, res) => {
   }
 });
 
-router.post('/chat', async (req, res) => {
-  const { question, recipeContext, history } = req.body ?? {};
-  if (typeof question !== 'string' || !question.trim() || !recipeContext?.recipe_metadata) {
-    return res.status(400).json({ error: 'question y recipeContext son obligatorios' });
-  }
+router.post('/chat', validateBody(chatSchema), async (req, res) => {
+  const { question, recipeContext, history } = req.body;
 
   const systemInstruction = `
     Eres un Sous-Chef amigable y experto.

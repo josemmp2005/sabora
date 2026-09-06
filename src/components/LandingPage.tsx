@@ -298,7 +298,7 @@ const LandingPage: React.FC = () => {
               <div className="mb-6 text-3xl font-bold tracking-tight text-[#241B10] dark:text-[#F8F2E6]">Gratis</div>
               <div className="flex flex-col gap-3 mb-7 flex-grow">
                 <div className="flex items-center gap-2.5 text-[13px] text-[#3A2E1D] dark:text-[#B4B4B9]">
-                  <CheckIcon className="w-3.5 h-3.5 text-primary" /> 3 recetas al día
+                  <CheckIcon className="w-3.5 h-3.5 text-primary" /> 2 recetas al día
                 </div>
                 <div className="flex items-center gap-2.5 text-[13px] text-[#3A2E1D] dark:text-[#B4B4B9]">
                   <CheckIcon className="w-3.5 h-3.5 text-primary" /> Modo despensa básico

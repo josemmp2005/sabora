@@ -20,6 +20,10 @@ const Layout: React.FC<LayoutProps> = ({ children, session, onAuthChange }) => {
 
   const isAppPage = location.pathname.startsWith('/app');
   const isLanding = location.pathname === '/';
+  // Con la cuenta sin verificar no hay nada que navegar dentro de /app: no se
+  // muestra el sidebar (evita dar la sensación de que hay más app detrás del
+  // muro), y el header/footer normales ya traen una forma de volver a inicio.
+  const isVerified = session?.user?.email_verified !== false;
 
   const handleLogout = async () => {
     try {
@@ -32,7 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children, session, onAuthChange }) => {
     }
   };
 
-  if (session && isAppPage) {
+  if (session && isAppPage && isVerified) {
     return (
       <div className="min-h-screen bg-[#FCF6EC] dark:bg-[#130F0A] flex transition-colors duration-300">
         <Sidebar
@@ -78,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children, session, onAuthChange }) => {
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
 
-            {session ? (
+            {session && isVerified ? (
               <>
                 <Link to="/app" className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-full hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 shadow-lg shadow-orange-500/20">
                   Ir a la Cocina
@@ -91,6 +95,14 @@ const Layout: React.FC<LayoutProps> = ({ children, session, onAuthChange }) => {
                   <LogOut className="w-5 h-5" />
                 </button>
               </>
+            ) : session ? (
+              <button
+                onClick={handleLogout}
+                className="p-2 text-[#8C7C63] dark:text-[#7C715E] hover:text-red-500 hover:scale-110 active:scale-90 transition-all duration-300"
+                title="Cerrar Sesión"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             ) : (
               <Link to="/auth" className="px-5 py-2.5 bg-[#241B10] dark:bg-[#F8F2E6] text-[#F8F2E6] dark:text-[#241B10] font-bold text-sm rounded-full hover:opacity-90 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-95 transition-all duration-300 shadow-lg">
                 Iniciar Sesión

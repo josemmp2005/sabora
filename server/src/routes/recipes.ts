@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import type { PoolClient } from 'pg';
 import { pool, withTransaction } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
+import { validateBody } from '../lib/validate.js';
+import { saveRecipeSchema } from '../lib/schemas.js';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, requireVerifiedEmail);
 
 const FREE_DAILY_LIMIT = 2;
 
@@ -127,12 +129,8 @@ const getActivePlan = async (client: PoolClient, userId: string): Promise<string
   return rows[0]?.plan_type || 'nipote';
 };
 
-router.post('/', async (req, res) => {
-  const { recipe, prompt, imageUrl } = req.body ?? {};
-
-  if (!recipe?.recipe_metadata?.title) {
-    return res.status(400).json({ error: 'recipe.recipe_metadata.title es obligatorio' });
-  }
+router.post('/', validateBody(saveRecipeSchema), async (req, res) => {
+  const { recipe, prompt, imageUrl } = req.body;
 
   try {
     const created = await withTransaction(async (client) => {

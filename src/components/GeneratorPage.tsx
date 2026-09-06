@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import RecipeForm from './RecipeForm';
 import RecipeDisplay from './RecipeDisplay';
 import LoadingOverlay from './LoadingOverlay';
-import { generateRecipeAI, generateRecipeImage } from '../services/gemini-edge';
+import { generateRecipeAI, generateRecipeImage, EmailNotVerifiedError } from '../services/gemini-edge';
 import { saveRecipeToDB, DailyLimitError } from '../services/data';
 import type{ AIRecipeResponse, UserProfile, GenerationParams } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -130,7 +130,11 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
       }
 
     } catch (err: any) {
-      showToast("Lo siento, hubo un error generando tu receta. Intenta de nuevo.", 'error');
+      if (err instanceof EmailNotVerifiedError) {
+        showToast('Verifica tu email antes de generar recetas. Revisa tu bandeja de entrada.', 'error');
+      } else {
+        showToast("Lo siento, hubo un error generando tu receta. Intenta de nuevo.", 'error');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);

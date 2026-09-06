@@ -13,15 +13,15 @@ interface Props {
 const Auth: React.FC<Props> = ({ onAuthChange }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -61,7 +61,7 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
         if (signUpError || !user) throw new Error(signUpError?.message || 'No se pudo crear la cuenta');
 
         onAuthChange({ user });
-        showToast('¡Registro exitoso! Bienvenido a Sabora.', 'success');
+        showToast('¡Registro exitoso! Revisa tu email para verificar tu cuenta.', 'success');
         navigate('/app');
       }
     } catch (err: any) {
@@ -84,23 +84,23 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
         <div className="flex flex-col items-center mb-8">
           <Logo className="w-16 h-16 mb-2" textClassName="text-3xl" />
           <h2 className="text-xl font-bold text-[#241B10] dark:text-[#F8F2E6] mt-4">
-            {isForgotPassword 
-              ? 'Recuperar contraseña' 
-              : isLogin 
-                ? 'Bienvenido de nuevo' 
+            {isForgotPassword
+              ? 'Recuperar contraseña'
+              : isLogin
+                ? 'Bienvenido de nuevo'
                 : 'Únete a nonnapp'}
           </h2>
           <p className="text-[#8C7C63] dark:text-[#7C715E] mt-2 text-sm text-center">
             {isForgotPassword
               ? 'Te enviaremos un email para restablecer tu contraseña.'
-              : isLogin 
-                ? 'Accede para guardar tus recetas y preferencias.' 
+              : isLogin
+                ? 'Accede para guardar tus recetas y preferencias.'
                 : 'Crea tu perfil culinario y empieza a cocinar.'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {!isLogin && !isForgotPassword && (
             <div className="animate-in slide-in-from-top-2 fade-in space-y-4">
               <div className="space-y-1">
@@ -149,7 +149,7 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
                     required
                     className="w-full pl-10 pr-12 py-3 bg-[#FCF6EC] dark:bg-[#221B12] border border-[#241B10]/15 dark:border-[#F5E6CD]/15 rounded-xl focus:bg-white dark:focus:bg-[#2A2114] focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-[#241B10] dark:text-[#F8F2E6]"
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3.5 text-[#8C7C63] hover:text-[#5C4E3A] dark:hover:text-[#D4D4D8] transition-colors"
@@ -157,12 +157,12 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                
+
                 {!isLogin && (
-                   <div className="flex items-center gap-2 mt-1 px-1">
-                      {isPasswordLengthValid ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-3 h-3 rounded-full border border-[#241B10]/20 dark:border-[#F5E6CD]/15"></div>}
-                      <span className={`text-xs ${isPasswordLengthValid ? 'text-green-600' : 'text-[#8C7C63]'}`}>Mínimo 6 caracteres</span>
-                   </div>
+                  <div className="flex items-center gap-2 mt-1 px-1">
+                    {isPasswordLengthValid ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-3 h-3 rounded-full border border-[#241B10]/20 dark:border-[#F5E6CD]/15"></div>}
+                    <span className={`text-xs ${isPasswordLengthValid ? 'text-green-600' : 'text-[#8C7C63]'}`}>Mínimo 6 caracteres</span>
+                  </div>
                 )}
               </div>
 
@@ -181,9 +181,9 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
                     />
                   </div>
                   <div className="flex items-center gap-2 mt-1 px-1">
-                      {doPasswordsMatch ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-3 h-3 rounded-full border border-[#241B10]/20 dark:border-[#F5E6CD]/15"></div>}
-                      <span className={`text-xs ${doPasswordsMatch ? 'text-green-600' : 'text-[#8C7C63]'}`}>Las contraseñas coinciden</span>
-                   </div>
+                    {doPasswordsMatch ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-3 h-3 rounded-full border border-[#241B10]/20 dark:border-[#F5E6CD]/15"></div>}
+                    <span className={`text-xs ${doPasswordsMatch ? 'text-green-600' : 'text-[#8C7C63]'}`}>Las contraseñas coinciden</span>
+                  </div>
                 </div>
               )}
 
@@ -233,7 +233,7 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
             </button>
           ) : (
             <p className="text-sm text-[#8C7C63] dark:text-[#7C715E]">
-              {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? " }
+              {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
               <button
                 onClick={() => {
                   setIsLogin(!isLogin);

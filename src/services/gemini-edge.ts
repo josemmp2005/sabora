@@ -1,10 +1,17 @@
 import type { AIRecipeResponse, UserProfile } from '../types';
 import { geminiRateLimiter, recipeCache } from '../utils/rateLimiter';
 import { getMockRecipe } from './mock-recipe';
-import { apiFetch } from './api';
+import { apiFetch, ApiError } from './api';
 
 // 🚨 DESARROLLO: Activa esto si la API de Gemini está en rate limit (429)
 const USE_MOCK_RECIPE = false; // Cambia a true para usar datos de prueba
+
+export class EmailNotVerifiedError extends Error {
+  constructor() {
+    super('EMAIL_NOT_VERIFIED');
+    this.name = 'EmailNotVerifiedError';
+  }
+}
 
 /**
  * Genera una receta llamando a la API propia (server/src/routes/ai.ts),
@@ -43,6 +50,9 @@ export const generateRecipeAI = async (
       return result.data;
     } catch (error: any) {
       console.error('Error generando receta:', error);
+      if (error instanceof ApiError && error.status === 403 && error.message === 'EMAIL_NOT_VERIFIED') {
+        throw new EmailNotVerifiedError();
+      }
       throw new Error(error.message || 'No se pudo generar la receta. Intenta de nuevo.');
     }
   });

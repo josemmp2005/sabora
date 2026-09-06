@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
+import { validateBody } from '../lib/validate.js';
+import { preferencesSchema } from '../lib/schemas.js';
 
 const router = Router();
-router.use(requireAuth);
+router.use(requireAuth, requireVerifiedEmail);
 
 const DEFAULT_PREFERENCES = {
   allergies: '',
@@ -50,8 +52,8 @@ router.get('/preferences', async (req, res) => {
   }
 });
 
-router.put('/preferences', async (req, res) => {
-  const { allergies, disliked_ingredients, cooking_skill } = req.body ?? {};
+router.put('/preferences', validateBody(preferencesSchema), async (req, res) => {
+  const { allergies, disliked_ingredients, cooking_skill } = req.body;
 
   try {
     await pool.query(
@@ -62,7 +64,7 @@ router.put('/preferences', async (req, res) => {
              disliked_ingredients = EXCLUDED.disliked_ingredients,
              hability = EXCLUDED.hability,
              updated_at = NOW()`,
-      [req.userId, allergies || '', disliked_ingredients || '', cooking_skill || 'intermediate']
+      [req.userId, allergies, disliked_ingredients, cooking_skill]
     );
     return res.status(204).send();
   } catch (err) {
