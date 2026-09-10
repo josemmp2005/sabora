@@ -8,17 +8,21 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
+  -- NULL para cuentas que solo entran con Google (nunca fijaron contraseña).
+  password_hash TEXT,
   username TEXT NOT NULL,
   avatar_url TEXT,
+  google_id TEXT UNIQUE,
   email_verified BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Por si la tabla ya existía de antes de añadir email_verified (CREATE TABLE
--- IF NOT EXISTS no la habría añadido a una tabla preexistente).
+-- Por si la tabla ya existía de antes de añadir estas columnas (CREATE TABLE
+-- IF NOT EXISTS no las habría añadido a una tabla preexistente).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

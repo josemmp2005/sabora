@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import RecipeForm from './RecipeForm';
 import RecipeDisplay from './RecipeDisplay';
 import LoadingOverlay from './LoadingOverlay';
-import { generateRecipeAI, generateRecipeImage, EmailNotVerifiedError } from '../services/gemini-edge';
+import { generateRecipeAI, generateRecipeImage, EmailNotVerifiedError, PlanRequiredError } from '../services/gemini-edge';
 import { saveRecipeToDB, DailyLimitError } from '../services/data';
 import type{ AIRecipeResponse, UserProfile, GenerationParams } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -18,7 +18,7 @@ interface Props {
 
 const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
   const { showToast } = useToast();
-  const { subscription, limits, checkRecipeLimit, incrementRecipeCount } = useSubscription();
+  const { subscription, limits, checkRecipeLimit, incrementRecipeCount, markDailyLimitReached } = useSubscription();
   const location = useLocation();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -60,7 +60,7 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
     }
 
     // Check recipe limit for free users
-      const { canGenerate } = checkRecipeLimit();
+    const { canGenerate, remaining: remainingBeforeGenerate } = checkRecipeLimit();
     if (!canGenerate) {
       showToast('Has alcanzado el límite de 2 recetas diarias. Actualiza a La Mamma para recetas ilimitadas.', 'error');
       return;
@@ -106,7 +106,9 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
           await saveRecipeToDB(generatedRecipe, params.prompt, generatedImage);
           incrementRecipeCount(); // Increment after successful generation
 
-          const { remaining } = checkRecipeLimit();
+          // Se calcula a partir del valor ya leído arriba en vez de releer
+          // localStorage otra vez: canGenerate=true garantiza remainingBeforeGenerate >= 1.
+          const remaining = remainingBeforeGenerate === Infinity ? Infinity : remainingBeforeGenerate - 1;
           if (remaining === 1) {
             showToast('Receta guardada. Te queda 1 receta hoy.', 'success');
           } else if (remaining === 0) {
@@ -117,6 +119,9 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
         } catch (saveError: any) {
           // Detectar error de límite diario desde el backend
           if (saveError instanceof DailyLimitError) {
+            // El servidor manda: si dice que ya no quedan, el contador local
+            // (que pudo desincronizarse) se corrige para que no siga mintiendo.
+            markDailyLimitReached();
             showToast('❌ Límite diario alcanzado. Has generado el máximo de 2 recetas hoy. Actualiza a La Mamma para recetas ilimitadas.', 'error');
             // No mostrar la receta si no se pudo guardar por límite
             setCurrentRecipe(null);
@@ -132,6 +137,8 @@ const GeneratorPage: React.FC<Props> = ({ userProfile, session }) => {
     } catch (err: any) {
       if (err instanceof EmailNotVerifiedError) {
         showToast('Verifica tu email antes de generar recetas. Revisa tu bandeja de entrada.', 'error');
+      } else if (err instanceof PlanRequiredError) {
+        showToast('El modo despensa está disponible en los planes La Mamma y La Nonna.', 'error');
       } else {
         showToast("Lo siento, hubo un error generando tu receta. Intenta de nuevo.", 'error');
       }

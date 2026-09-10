@@ -33,7 +33,7 @@
     const location = useLocation();
     const { theme, toggleTheme } = useTheme();
     const username = session?.user?.user_metadata?.username || session?.user?.email?.split('@')[0] || 'Chef';
-    const avatarUrl = session?.user?.user_metadata?.avatar_url;
+    const avatarUrl = session?.user?.avatar_url;
 
     const handleNavigation = (path: string) => {
       navigate(path);

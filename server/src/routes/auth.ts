@@ -5,6 +5,7 @@ import { pool, withTransaction } from '../db.js';
 import { requireAuth, createSession, revokeSession, revokeAllUserSessions, SESSION_COOKIE } from '../middleware/auth.js';
 import { isProd, env } from '../env.js';
 import { sendMail } from '../lib/mailer.js';
+import { getGoogleAuthUrl, exchangeGoogleCode, getGoogleUserInfo } from '../lib/google.js';
 import { createStrictAuthRateLimiter, createTokenRateLimiter } from '../middleware/rateLimit.js';
 import { validateBody } from '../lib/validate.js';
 import {
@@ -136,6 +137,11 @@ router.post('/login', createStrictAuthRateLimiter(), validateBody(loginSchema), 
     }
 
     const user = rows[0];
+    // Cuentas creadas solo con Google no tienen password_hash — bcrypt.compare
+    // lanzaría con un hash nulo, así que se corta aquí con el mismo error genérico.
+    if (!user.password_hash) {
+      return res.status(401).json(GENERIC_ERROR);
+    }
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatches) {
       return res.status(401).json(GENERIC_ERROR);
@@ -364,6 +370,106 @@ router.post('/resend-verification', requireAuth, createTokenRateLimiter(), async
   } catch (err) {
     console.error('Error reenviando verificación:', err);
     return res.status(500).json({ error: 'No se pudo reenviar el email de verificación' });
+  }
+});
+
+const GOOGLE_STATE_COOKIE = 'sabora_google_state';
+const GOOGLE_STATE_TTL_MS = 10 * 60 * 1000; // 10 min, tiempo de sobra para completar el consentimiento
+
+// Sin rate limiter aquí a propósito: es una navegación de página completa
+// (<a href>), no un fetch — un límite alcanzado devolvería JSON en blanco en
+// vez de una página real, y a diferencia de login/signup no hay credenciales
+// que probar por fuerza bruta (el "state" lo genera el propio servidor).
+router.get('/google', (_req, res) => {
+  if (!env.googleClientId || !env.googleClientSecret) {
+    return res.redirect(`${env.appUrl}/auth?error=google_not_configured`);
+  }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie(GOOGLE_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    maxAge: GOOGLE_STATE_TTL_MS,
+    path: '/api/auth/google',
+  });
+  res.redirect(getGoogleAuthUrl(state));
+});
+
+router.get('/google/callback', async (req, res) => {
+  const savedState = req.cookies?.[GOOGLE_STATE_COOKIE];
+  res.clearCookie(GOOGLE_STATE_COOKIE, { path: '/api/auth/google' });
+
+  const { code, state } = req.query;
+
+  if (!env.googleClientId || !env.googleClientSecret) {
+    return res.redirect(`${env.appUrl}/auth?error=google_not_configured`);
+  }
+  // El state va y vuelve en una cookie httpOnly propia (no en el body/query
+  // que controla el cliente) — así un CSRF no puede colar su propio "code".
+  if (typeof code !== 'string' || typeof state !== 'string' || !savedState || state !== savedState) {
+    return res.redirect(`${env.appUrl}/auth?error=google_failed`);
+  }
+
+  try {
+    const tokens = await exchangeGoogleCode(code);
+    const profile = await getGoogleUserInfo(tokens.access_token);
+
+    if (!profile.email) {
+      return res.redirect(`${env.appUrl}/auth?error=google_failed`);
+    }
+    const normalizedEmail = normalizeEmail(profile.email);
+
+    const user = await withTransaction(async (client) => {
+      const byGoogleId = await client.query(
+        'SELECT id, email, username, avatar_url, email_verified FROM users WHERE google_id = $1',
+        [profile.sub]
+      );
+      if (byGoogleId.rows.length > 0) return byGoogleId.rows[0];
+
+      const byEmail = await client.query(
+        'SELECT id, email, username, avatar_url, email_verified FROM users WHERE email = $1',
+        [normalizedEmail]
+      );
+      if (byEmail.rows.length > 0) {
+        // Ya existía una cuenta con ese email (creada con contraseña): se
+        // enlaza la cuenta de Google y se marca el email verificado (Google
+        // ya lo verificó — no hace falta nuestro propio email de verificación).
+        const { rows } = await client.query(
+          `UPDATE users SET google_id = $1, email_verified = true,
+             avatar_url = COALESCE(avatar_url, $2), updated_at = NOW()
+           WHERE id = $3
+           RETURNING id, email, username, avatar_url, email_verified`,
+          [profile.sub, profile.picture || null, byEmail.rows[0].id]
+        );
+        return rows[0];
+      }
+
+      const username = profile.name?.trim() || normalizedEmail.split('@')[0];
+      const { rows: newUserRows } = await client.query(
+        `INSERT INTO users (email, password_hash, username, avatar_url, google_id, email_verified)
+         VALUES ($1, NULL, $2, $3, $4, true)
+         RETURNING id, email, username, avatar_url, email_verified`,
+        [normalizedEmail, username, profile.picture || null, profile.sub]
+      );
+      const newUser = newUserRows[0];
+
+      await client.query(
+        `INSERT INTO subscriptions (user_id, plan_type, is_active, start_date)
+         VALUES ($1, 'nipote', true, NOW())`,
+        [newUser.id]
+      );
+      await client.query(`INSERT INTO user_profiles (user_id) VALUES ($1)`, [newUser.id]);
+
+      return newUser;
+    });
+
+    const { token } = await createSession(user.id);
+    res.cookie(SESSION_COOKIE, token, cookieOptions);
+    return res.redirect(`${env.appUrl}/app`);
+  } catch (err) {
+    console.error('Error en Google OAuth callback:', err);
+    return res.redirect(`${env.appUrl}/auth?error=google_failed`);
   }
 });
 

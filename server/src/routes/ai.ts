@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
+import { requirePlan } from '../middleware/plan.js';
 import { env } from '../env.js';
+import { pool } from '../db.js';
 import { groqChat } from '../lib/groq.js';
+import { getActivePlan } from '../lib/subscription.js';
 import { validateBody } from '../lib/validate.js';
 import { generateRecipeSchema, generateImageSchema, chatSchema } from '../lib/schemas.js';
 
@@ -31,6 +34,16 @@ const RECIPE_JSON_FORMAT = `Responde ÚNICAMENTE con un objeto JSON válido (sin
 
 router.post('/generate-recipe', validateBody(generateRecipeSchema), async (req, res) => {
   const { prompt, mode, ingredients, servings, timeLimit, utensils, userProfile } = req.body;
+
+  // El modo despensa (hasAdvancedPantry en el frontend) es de pago — se
+  // comprueba aquí porque la restricción de la UI no basta, cualquiera puede
+  // llamar a esta ruta directamente con mode: 'pantry'.
+  if (mode === 'pantry') {
+    const plan = await getActivePlan(pool, req.userId!);
+    if (plan === 'nipote') {
+      return res.status(403).json({ error: 'PLAN_REQUIRED', plan, requiredPlans: ['mamma', 'nonna'] });
+    }
+  }
 
   let systemInstruction = `
     Eres un chef experto asistido por IA.
@@ -76,7 +89,7 @@ router.post('/generate-recipe', validateBody(generateRecipeSchema), async (req, 
   }
 });
 
-router.post('/generate-image', validateBody(generateImageSchema), async (req, res) => {
+router.post('/generate-image', validateBody(generateImageSchema), requirePlan('mamma', 'nonna'), async (req, res) => {
   if (!env.geminiApiKey) {
     // Sin clave de Gemini configurada: se degrada a "sin imagen" en vez de romper el flujo.
     return res.json({ success: true, imageUrl: null });
@@ -106,7 +119,7 @@ router.post('/generate-image', validateBody(generateImageSchema), async (req, re
   }
 });
 
-router.post('/chat', validateBody(chatSchema), async (req, res) => {
+router.post('/chat', validateBody(chatSchema), requirePlan('mamma', 'nonna'), async (req, res) => {
   const { question, recipeContext, history } = req.body;
 
   const systemInstruction = `

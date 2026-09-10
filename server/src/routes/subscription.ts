@@ -3,6 +3,7 @@ import { pool, withTransaction } from '../db.js';
 import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
 import { validateBody } from '../lib/validate.js';
 import { toggleSubscriptionSchema } from '../lib/schemas.js';
+import { getActiveSubscription } from '../lib/subscription.js';
 
 const router = Router();
 router.use(requireAuth, requireVerifiedEmail);
@@ -22,27 +23,17 @@ const toDisplayPlan = (planType: string | undefined) => {
 
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT plan_type, is_active, start_date, end_date FROM subscriptions
-       WHERE user_id = $1 AND is_active = true
-       ORDER BY created_at DESC LIMIT 1`,
-      [req.userId]
-    );
+    const sub = await getActiveSubscription(pool, req.userId!);
 
-    if (rows.length === 0) {
-      return res.json({ plan_type: 'Nipote', is_active: true, start_date: null, end_date: null });
-    }
-
-    const row = rows[0];
-    if (row.end_date && new Date(row.end_date) < new Date()) {
+    if (!sub) {
       return res.json({ plan_type: 'Nipote', is_active: true, start_date: null, end_date: null });
     }
 
     return res.json({
-      plan_type: toDisplayPlan(row.plan_type),
-      is_active: row.is_active,
-      start_date: row.start_date,
-      end_date: row.end_date,
+      plan_type: toDisplayPlan(sub.plan_type),
+      is_active: true,
+      start_date: sub.start_date,
+      end_date: sub.end_date,
     });
   } catch (err) {
     console.error('Error cargando suscripción:', err);

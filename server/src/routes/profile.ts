@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
 import { validateBody } from '../lib/validate.js';
 import { preferencesSchema } from '../lib/schemas.js';
+import { getActivePlan } from '../lib/subscription.js';
 
 const router = Router();
 router.use(requireAuth, requireVerifiedEmail);
@@ -24,13 +25,8 @@ router.get('/preferences', async (req, res) => {
       [req.userId]
     );
 
-    const { rows: subRows } = await pool.query(
-      `SELECT plan_type FROM subscriptions
-       WHERE user_id = $1 AND is_active = true AND (end_date IS NULL OR end_date > NOW())
-       ORDER BY created_at DESC LIMIT 1`,
-      [req.userId]
-    );
-    const isPro = ['mamma', 'nonna'].includes(subRows[0]?.plan_type);
+    const plan = await getActivePlan(pool, req.userId!);
+    const isPro = plan === 'mamma' || plan === 'nonna';
 
     if (rows.length === 0) {
       return res.json({ ...DEFAULT_PREFERENCES, is_pro: isPro });

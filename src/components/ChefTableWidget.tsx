@@ -13,7 +13,7 @@ const CHEF_STYLES = [
     subtitle: 'La Exigente',
     description: 'No tolera un corte mal hecho. Técnica perfecta y sabores intensos.',
     style: 'Estilo de cocina de alta gama, técnica francesa moderna pero con alma italiana, exigente, presentación minimalista y elegante.',
-    image: 'https://images.unsplash.com/photo-1577106263724-2c8e03bfe9f4?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?auto=format&fit=crop&w=400&q=80',
     color: 'from-red-500 to-orange-600',
     dish: 'Osobuco a la Milanesa Perfecto'
   },
@@ -46,6 +46,26 @@ const CHEF_STYLES = [
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',
     color: 'from-lime-500 to-green-600',
     dish: 'Risotto de Coliflor y Trufa'
+  },
+  {
+    id: 'rosa',
+    name: 'Nonna Rosa',
+    subtitle: 'La Siciliana',
+    description: 'Cocina con vista al mar. Todo lleva limón, alcaparras y mucho aceite de oliva.',
+    style: 'Cocina mediterránea siciliana, pescado y marisco fresco, cítricos, alcaparras, aceite de oliva virgen extra, pasta fresca, sabores intensos y directos, presentación colorida y veraniega.',
+    image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=400&q=80',
+    color: 'from-cyan-500 to-blue-600',
+    dish: 'Pasta alla Norma con Berenjena'
+  },
+  {
+    id: 'giulia',
+    name: 'Nonna Giulia',
+    subtitle: 'La Repostera',
+    description: 'El postre es sagrado. No hay comida de domingo sin algo dulce hecho en casa.',
+    style: 'Repostería casera italiana, tartas, cremas, frutas de temporada, técnica de pastelería clásica pero acogedora, presentación delicada y dulce, ideal para sobremesa.',
+    image: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=400&q=80',
+    color: 'from-pink-500 to-rose-600',
+    dish: 'Crêpes de la Nonna con Fresas y Nata'
   }
 ];
 
@@ -154,6 +174,9 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard', isLocked = fa
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [chefTab, setChefTab] = useState<'styles' | 'featured'>('styles');
+  // En el Dashboard es solo un adelanto (3 nonnas) — la lista completa vive
+  // en /app/chef (variant="full"), que es donde tiene sentido explorarlas todas.
+  const visibleStyles = variant === 'full' ? CHEF_STYLES : CHEF_STYLES.slice(0, 3);
 
   const triggerChefSpecial = (preset: typeof CHEF_STYLES[0]) => {
     if (isLocked) {
@@ -208,8 +231,8 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard', isLocked = fa
         </div>
         
         {chefTab === 'styles' ? (
-            <div className={`grid gap-4 animate-in fade-in slide-in-from-bottom-2 ${variant === 'full' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
-                {CHEF_STYLES.map((preset) => (
+            <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleStyles.map((preset) => (
                 <button
                     key={preset.id}
                     onClick={() => triggerChefSpecial(preset)}
@@ -282,7 +305,7 @@ const ChefTableWidget: React.FC<Props> = ({ variant = 'dashboard', isLocked = fa
                     </div>
                     <div className={`p-5 flex-grow flex flex-col ${isLocked ? 'opacity-60' : ''}`}>
                         <div className="mb-2">
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-orange-50 dark:bg-orange-900/20 p       x-2 py-1 rounded-md mb-2 inline-block">
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md mb-2 inline-block">
                                 {recipe.recipe_metadata.difficulty} • {recipe.recipe_metadata.cooking_time}
                             </span>
                             <h3 className="text-lg font-bold text-[#241B10] dark:text-[#F8F2E6] leading-tight group-hover:text-primary transition-colors">

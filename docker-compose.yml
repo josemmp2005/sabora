@@ -23,5 +23,37 @@ services:
       # 8081, no 8080: esta máquina ya tiene otro Adminer en 8080.
       - "8081:8080"
 
+  # App completa contenerizada (backend + frontend). Para desarrollo normal
+  # NO hace falta esto — sigue siendo más rápido `npm run dev` en server/ y
+  # en la raíz (hot reload). Esto es para probar/desplegar como se ejecutaría
+  # en un servidor real. Requiere server/.env con las claves reales; ver
+  # README.md → "Levantar todo con Docker".
+  server:
+    build: ./server
+    restart: unless-stopped
+    env_file: ./server/.env
+    environment:
+      # Dentro de la red de Docker el hostname es el nombre del servicio
+      # (`postgres`) y el puerto es el interno del contenedor (5432), no el
+      # 5434 publicado al host — eso solo aplica desde fuera de Docker.
+      DATABASE_URL: postgres://sabora:sabora@postgres:5432/sabora
+      # El navegador ve el frontend en localhost:8082 (puerto publicado del
+      # servicio `web` de abajo), así que el CORS debe permitir ese origen.
+      CORS_ORIGIN: http://localhost:8082
+      APP_URL: http://localhost:8082
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      # 8082: 8080/8081 ya están ocupados por Adminer y otro proyecto.
+      - "8082:80"
+
 volumes:
   sabora_pg_data:

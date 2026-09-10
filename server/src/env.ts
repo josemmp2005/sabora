@@ -20,6 +20,10 @@ export const env = {
   gmailUser: process.env.GMAIL_USER || '',
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || '',
   appUrl: process.env.APP_URL || 'http://localhost:5173',
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  googleRedirectUri:
+    process.env.GOOGLE_REDIRECT_URI || `http://localhost:${Number(process.env.PORT) || 3001}/api/auth/google/callback`,
 };
 
 export const isProd = env.nodeEnv === 'production';

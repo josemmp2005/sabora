@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, requestPasswordReset } from '../services/auth';
 import type { AuthSession } from '../services/auth';
+import { API_URL } from '../services/api';
 import { Mail, Lock, Loader2, ArrowRight, User, Eye, EyeOff, Check } from 'lucide-react';
 import { Logo } from './Logo';
 import { useToast } from '../context/ToastContext';
+
+const GoogleIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z" />
+    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 15.9 3 8.9 7.6 6.3 14.7z" />
+    <path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.4 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9 41.2 15.9 45 24 45z" />
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C40.9 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z" />
+  </svg>
+);
 
 interface Props {
   onAuthChange: (session: AuthSession | null) => void;
@@ -24,6 +34,7 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
 
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Validation States
   const [isPasswordLengthValid, setIsPasswordLengthValid] = useState(false);
@@ -33,6 +44,25 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
     setIsPasswordLengthValid(password.length >= 6);
     setDoPasswordsMatch(password === confirmPassword && password.length > 0);
   }, [password, confirmPassword]);
+
+  // El backend redirige aquí con ?error=... si el login con Google falla
+  // (el usuario cancela, la config no está lista, el state no cuadra, etc.).
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (!error) return;
+
+    if (error === 'google_not_configured') {
+      showToast('El login con Google no está disponible todavía.', 'error');
+    } else if (error === 'google_failed') {
+      showToast('No se pudo iniciar sesión con Google. Intenta de nuevo.', 'error');
+    }
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_URL}/api/auth/google`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +128,25 @@ const Auth: React.FC<Props> = ({ onAuthChange }) => {
                 : 'Crea tu perfil culinario y empieza a cocinar.'}
           </p>
         </div>
+
+        {!isForgotPassword && (
+          <>
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 py-3 border border-[#241B10]/15 dark:border-[#F5E6CD]/15 rounded-xl font-semibold text-[#3A2E1D] dark:text-[#D4D4D8] bg-white dark:bg-[#221B12] hover:bg-[#241B10]/5 dark:hover:bg-white/5 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+            >
+              <GoogleIcon className="w-5 h-5" />
+              Continuar con Google
+            </button>
+
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-grow h-px bg-[#241B10]/10 dark:bg-[#F5E6CD]/10" />
+              <span className="text-xs text-[#8C7C63] dark:text-[#7C715E] uppercase tracking-wide">o con email</span>
+              <div className="flex-grow h-px bg-[#241B10]/10 dark:bg-[#F5E6CD]/10" />
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
 

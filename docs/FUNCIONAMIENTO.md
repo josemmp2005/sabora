@@ -28,6 +28,7 @@ Todo lo que empieza por `/app` exige sesión iniciada; si no hay sesión, rediri
 - Login: mismo email/contraseña. Por seguridad, un email que no existe y una contraseña incorrecta dan el mismo mensaje de error genérico (no se puede saber si un email está registrado probando a hacer login). Máximo 8 intentos cada 15 minutos por IP.
 - La sesión se mantiene con una cookie segura (httpOnly, 7 días de validez) — cerrar y volver a abrir el navegador no desloguea. Cada sesión (login) queda registrada en el servidor: cerrar sesión, o cambiar de contraseña, invalida esa sesión (o todas las demás) al instante, sin esperar a que caduque sola.
 - "Olvidé mi contraseña": se manda un link por email válido 30 minutos. Si el email no existe, la respuesta es igualmente "revisa tu correo" (no revela qué emails están registrados). Al completar el cambio, se cierran todas las sesiones activas de la cuenta (por si el link lo usó alguien con acceso al correo pero no a las sesiones ya abiertas).
+- "Continuar con Google": crea la cuenta (o la enlaza, si ya existía una con ese email creada por contraseña) sin pedir verificación de email aparte — Google ya confirma que el email es del usuario. Una cuenta creada solo con Google no tiene contraseña hasta que el usuario le pone una desde Editar perfil.
 
 ## Generar una receta
 
@@ -61,6 +62,7 @@ Botón flotante disponible mientras se ve una receta (planes de pago). Es una co
 
 Notas importantes:
 - **El pago no está implementado de verdad.** En Preferencias hay un botón "Obtener Pro" que activa el plan La Mamma directamente, sin pasarela de cobro — es una demo para poder probar las funciones de pago, no un checkout real.
+- **Los límites de Il Nipote se aplican en el servidor, no solo escondiendo botones.** Modo despensa, foto y chat devuelven un error si se intenta usarlos sin plan de pago aunque se salte la interfaz (por ejemplo llamando a la API directamente) — no basta con que la app no muestre el botón.
 - El planificador semanal y las "recetas secretas de temporada" de La Nonna son, por ahora, solo promesas de la landing — no hay ninguna pantalla ni funcionalidad construida para ellas todavía.
 
 ## Preferencias del chef
@@ -73,7 +75,6 @@ En `/app/preferences` el usuario configura:
 
 ## Lo que falta / no está terminado
 
-- Login con Google (se quitó al migrar la autenticación; se puede volver a añadir).
-- Subida de foto de perfil (avatar) — hoy el avatar es solo la inicial del nombre.
+- Subida de foto de perfil (avatar) — para cuentas de email/contraseña sigue siendo solo la inicial del nombre (las de Google sí traen foto de perfil real).
 - Pago real de los planes (Stripe o similar).
 - Persistencia del chat del chef y de la lista de la compra entre sesiones.

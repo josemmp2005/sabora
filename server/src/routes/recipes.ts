@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import type { PoolClient } from 'pg';
 import { pool, withTransaction } from '../db.js';
 import { requireAuth, requireVerifiedEmail } from '../middleware/auth.js';
 import { validateBody } from '../lib/validate.js';
 import { saveRecipeSchema } from '../lib/schemas.js';
+import { getActivePlan } from '../lib/subscription.js';
 
 const router = Router();
 router.use(requireAuth, requireVerifiedEmail);
@@ -118,16 +118,6 @@ router.get('/:id', async (req, res) => {
     return res.status(500).json({ error: 'No se pudo cargar la receta' });
   }
 });
-
-const getActivePlan = async (client: PoolClient, userId: string): Promise<string> => {
-  const { rows } = await client.query(
-    `SELECT plan_type FROM subscriptions
-     WHERE user_id = $1 AND is_active = true AND (end_date IS NULL OR end_date > NOW())
-     ORDER BY created_at DESC LIMIT 1`,
-    [userId]
-  );
-  return rows[0]?.plan_type || 'nipote';
-};
 
 router.post('/', validateBody(saveRecipeSchema), async (req, res) => {
   const { recipe, prompt, imageUrl } = req.body;

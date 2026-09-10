@@ -3,8 +3,10 @@ import { geminiRateLimiter, recipeCache } from '../utils/rateLimiter';
 import { getMockRecipe } from './mock-recipe';
 import { apiFetch, ApiError } from './api';
 
-// 🚨 DESARROLLO: Activa esto si la API de Gemini está en rate limit (429)
-const USE_MOCK_RECIPE = false; // Cambia a true para usar datos de prueba
+// Datos de prueba para desarrollo local sin gastar cuota de la IA. Nunca se
+// activa en build de producción (import.meta.env.DEV es `false` ahí, y Vite
+// lo sustituye en build time — esbuild elimina esta rama entera del bundle).
+const USE_MOCK_RECIPE = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_RECIPE === 'true';
 
 export class EmailNotVerifiedError extends Error {
   constructor() {
@@ -12,6 +14,20 @@ export class EmailNotVerifiedError extends Error {
     this.name = 'EmailNotVerifiedError';
   }
 }
+
+// La UI ya oculta el modo despensa / la foto / el chat para el plan gratis
+// (SubscriptionContext.tsx), así que esto no debería dispararse en uso normal
+// — es la red de seguridad si algo llama a estas funciones sin pasar por esa
+// comprobación, para no enseñar "PLAN_REQUIRED" en crudo en un toast.
+export class PlanRequiredError extends Error {
+  constructor() {
+    super('PLAN_REQUIRED');
+    this.name = 'PlanRequiredError';
+  }
+}
+
+const isPlanRequiredError = (error: unknown): boolean =>
+  error instanceof ApiError && error.status === 403 && error.message === 'PLAN_REQUIRED';
 
 /**
  * Genera una receta llamando a la API propia (server/src/routes/ai.ts),
@@ -53,6 +69,9 @@ export const generateRecipeAI = async (
       if (error instanceof ApiError && error.status === 403 && error.message === 'EMAIL_NOT_VERIFIED') {
         throw new EmailNotVerifiedError();
       }
+      if (isPlanRequiredError(error)) {
+        throw new PlanRequiredError();
+      }
       throw new Error(error.message || 'No se pudo generar la receta. Intenta de nuevo.');
     }
   });
@@ -84,6 +103,9 @@ export const askChefAboutRecipe = async (
     return result.reply;
   } catch (error) {
     console.error('Error en el chat:', error);
+    if (isPlanRequiredError(error)) {
+      return 'El chat con el chef está disponible en los planes La Mamma y La Nonna.';
+    }
     return 'Hubo un error al procesar tu pregunta.';
   }
 };

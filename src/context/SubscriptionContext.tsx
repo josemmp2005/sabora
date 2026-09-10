@@ -11,6 +11,7 @@ interface SubscriptionContextType {
   refreshSubscription: () => Promise<void>;
   checkRecipeLimit: () => { canGenerate: boolean; remaining: number };
   incrementRecipeCount: () => void;
+  markDailyLimitReached: () => void;
   hasFeature: (feature: keyof SubscriptionLimits) => boolean;
 }
 
@@ -140,6 +141,17 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode; session: Auth
     setRecipeCountToday(currentCount + 1);
   };
 
+  // El contador local es solo para pintar "te quedan N" sin esperar al
+  // servidor — puede desincronizarse (otro dispositivo, localStorage borrado).
+  // El backend es quien de verdad bloquea; cuando avisa de límite alcanzado,
+  // esto corrige el contador local para que dejar de mostrar un número que ya
+  // sabemos que es falso.
+  const markDailyLimitReached = () => {
+    if (limits.maxRecipesPerDay !== Infinity) {
+      setRecipeCountToday(limits.maxRecipesPerDay);
+    }
+  };
+
   const hasFeature = (feature: keyof SubscriptionLimits): boolean => {
     return !!limits[feature];
   };
@@ -153,6 +165,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode; session: Auth
         refreshSubscription,
         checkRecipeLimit,
         incrementRecipeCount,
+        markDailyLimitReached,
         hasFeature,
       }}
     >
